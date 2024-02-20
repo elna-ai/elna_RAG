@@ -11,4 +11,8 @@ type Result = variant {
   Ok : record { text };
   Err : record { RejectionCode; text };
 };
-service : { make_inter_canister_call : () -> (Result) }
+type Result_1 = variant { Ok : text; Err : record { RejectionCode; text } };
+service : {
+  make_inter_canister_call : (text) -> (Result);
+  "query" : (text, vec float32, int32) -> (Result_1);
+}

@@ -1,1 +1,4 @@
-service : { greet : (text) -> (text) query }
+service : {
+  greet : (text) -> (text) query;
+  "query" : (text, vec float32, int32) -> (text) query;
+}
