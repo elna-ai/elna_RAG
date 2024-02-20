@@ -1,3 +1,14 @@
-service : {
-    "greet": (text) -> (text) query;
-}
+type RejectionCode = variant {
+  NoError;
+  CanisterError;
+  SysTransient;
+  DestinationInvalid;
+  Unknown;
+  SysFatal;
+  CanisterReject;
+};
+type Result = variant {
+  Ok : record { text };
+  Err : record { RejectionCode; text };
+};
+service : { make_inter_canister_call : () -> (Result) }

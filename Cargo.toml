@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "src/elna_RAG_backend"
+    "src/elna_RAG_backend","src/test_canister"
 ]
 resolver = "2"
