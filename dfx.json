@@ -1,0 +1,17 @@
+{
+  "canisters": {
+    "elna_RAG_backend": {
+      "candid": "src/elna_RAG_backend/elna_RAG_backend.did",
+      "package": "elna_RAG_backend",
+      "type": "rust"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
