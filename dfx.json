@@ -4,11 +4,6 @@
       "candid": "src/elna_RAG_backend/elna_RAG_backend.did",
       "package": "elna_RAG_backend",
       "type": "rust"
-    },
-    "test_canister": {
-      "candid": "src/test_canister/test_canister.did",
-      "package": "test_canister",
-      "type": "rust"
     }
   },
   "defaults": {

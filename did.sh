@@ -12,7 +12,7 @@ function generate_did() {
 }
 
 # The list of canisters of your project
-CANISTERS=test_canister,elna_RAG_backend
+CANISTERS=elna_RAG_backend
 
 for canister in $(echo $CANISTERS | sed "s/,/ /g")
 do
