@@ -1,3 +1,36 @@
+type Body = record { response : text };
+type Error = variant {
+  CantParseHost;
+  BodyNonSerializable;
+  ParseError;
+  HttpError : text;
+};
+type HttpHeader = record { value : text; name : text };
+type HttpResponse = record {
+  status : nat;
+  body : vec nat8;
+  headers : vec HttpHeader;
+};
+type RejectionCode = variant {
+  NoError;
+  CanisterError;
+  SysTransient;
+  DestinationInvalid;
+  Unknown;
+  SysFatal;
+  CanisterReject;
+};
+type Response = record { body : Body; statusCode : nat16 };
+type Result = variant { Ok : Response; Err : Error };
+type Result_1 = variant {
+  Ok : record { text };
+  Err : record { RejectionCode; text };
+};
+type Result_2 = variant { Ok : text; Err : record { RejectionCode; text } };
+type TransformArgs = record { context : vec nat8; response : HttpResponse };
 service : {
-    "greet": (text) -> (text) query;
+  chat : (text, text) -> (Result);
+  make_inter_canister_call : (text) -> (Result_1);
+  "query" : (text, vec float32, int32) -> (Result_2);
+  transform : (TransformArgs) -> (HttpResponse) query;
 }
