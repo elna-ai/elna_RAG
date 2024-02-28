@@ -1,4 +1,8 @@
 type Body = record { response : text };
+type Envs = record {
+  external_service_url : text;
+  wizard_details_canister_id : text;
+};
 type Error = variant {
   CantParseHost;
   BodyNonSerializable;
@@ -22,15 +26,10 @@ type RejectionCode = variant {
 };
 type Response = record { body : Body; statusCode : nat16 };
 type Result = variant { Ok : Response; Err : Error };
-type Result_1 = variant {
-  Ok : record { text };
-  Err : record { RejectionCode; text };
-};
-type Result_2 = variant { Ok : text; Err : record { RejectionCode; text } };
+type Result_1 = variant { Ok : text; Err : record { RejectionCode; text } };
 type TransformArgs = record { context : vec nat8; response : HttpResponse };
-service : {
-  chat : (text, text) -> (Result);
-  make_inter_canister_call : (text) -> (Result_1);
-  "query" : (text, vec float32, int32) -> (Result_2);
+service : (Envs) -> {
+  chat : (text, text, vec float32) -> (Result);
+  "query" : (text, vec float32, int32) -> (Result_1);
   transform : (TransformArgs) -> (HttpResponse) query;
 }
