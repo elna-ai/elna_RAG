@@ -1,11 +1,10 @@
-use std::fmt::Debug;
-
 use candid::Nat;
 use ic_cdk::api::management_canister::http_request::{
     http_request, CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse, TransformArgs,
     TransformContext,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::fmt::Debug;
 use url::Url;
 
 pub async fn post_json<T, R>(url: &str, body: T) -> Result<R, crate::Error>
@@ -45,7 +44,6 @@ where
         Ok(string) => string,
         Err(_err) => return Err(crate::Error::BodyNonSerializable),
     };
-    ic_cdk::api::print(format!("{:?}", json_string));
     let json_utf8: Vec<u8> = json_string.into_bytes();
     let request_body: Option<Vec<u8>> = Some(json_utf8);
 
@@ -76,10 +74,7 @@ where
         Ok((response,)) => {
             let body: Result<R, serde_json::Error> = serde_json::from_slice(&response.body);
             match body {
-                Ok(body) => {
-                    ic_cdk::api::print(format!("In body OK,{:?}", body));
-                    Ok(body)
-                }
+                Ok(body) => Ok(body),
                 Err(e) => {
                     ic_cdk::api::print(format!("Received an error from api: err = {:?}", e));
                     Err(crate::Error::BodyNonSerializable)

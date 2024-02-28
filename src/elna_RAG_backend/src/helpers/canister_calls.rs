@@ -1,24 +1,22 @@
-// use candid::{CandidType, Principal};
-// use ic_cdk::api::call::CallResult;
-// use serde::Deserialize;
+#![allow(non_snake_case)]
+#![allow(dead_code)]
 
-// #![allow(dead_code, unused_imports)]
-use candid::{self, CandidType, Decode, Deserialize, Encode, Principal};
+use crate::get_envs;
+use candid::{self, CandidType, Deserialize, Principal};
 use ic_cdk::api::call::CallResult as Result;
 
 pub async fn get_agent_details(wizard_id: String) -> Option<WizardDetails> {
-    let wizard_details_service =
-        Service(Principal::from_text("gichg-2iaaa-aaaah-adtia-cai").unwrap());
+    let canister_id = get_envs().wizard_details_canister_id;
+    let wizard_details_service = Service(Principal::from_text(canister_id).unwrap());
     let result = wizard_details_service.get_wizard(wizard_id).await;
-    let a = wizard_details_service
-        .delete_wizard(String::from("arg0"))
-        .await;
     match result {
         Ok((wizard_details,)) => wizard_details,
         _ => None,
     }
 }
 
+// Generated from didc
+// TODO: move declarations into a separate module
 #[derive(CandidType, Deserialize)]
 pub enum WizardVisibility {
     #[serde(rename = "privateVisibility")]
@@ -124,28 +122,3 @@ impl Service {
         ic_cdk::call(self.0, "updateMessageAnalytics", (arg0,)).await
     }
 }
-
-// #[derive(Debug, Deserialize, CandidType)]
-// enum WizardVisibility {
-//     PrivateVisibility,
-//     PublicVisibility,
-//     UnlistedVisibility,
-// }
-
-// #[derive(Debug, Deserialize, CandidType)]
-// pub struct WizardDetails {
-//     avatar: String,
-//     biography: String,
-//     description: String,
-//     greeting: String,
-//     id: String,
-//     is_published: bool,
-//     name: String,
-//     summary: Option<String>,
-//     user_id: String,
-//     visibility: WizardVisibility,
-// }
-
-// trait WizardDetailsService {
-//     fn get_wizard(text: &str) -> Option<WizardDetails>;
-// }

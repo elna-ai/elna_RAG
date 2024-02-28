@@ -1,10 +1,10 @@
 use candid::CandidType;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
+use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
-
+use std::cell::RefCell;
 mod helpers;
-
 use candid::Principal;
 use helpers::canister_calls::get_agent_details;
 use helpers::out_calls::post_json;
@@ -14,7 +14,34 @@ use ic_cdk::api::call::RejectionCode;
 use ic_cdk::{export_candid, query, update};
 
 type QueryResult = String;
-type AgentDetails = (String, String);
+
+thread_local! {
+    static ENVS: RefCell<Envs> = RefCell::default();
+}
+#[derive(Deserialize, CandidType, Debug, Default)]
+pub struct Envs {
+    wizard_details_canister_id: String,
+    external_service_url: String,
+}
+
+#[init]
+fn init(args: Envs) {
+    ENVS.with(|envs| {
+        let mut envs = envs.borrow_mut();
+        envs.wizard_details_canister_id = args.wizard_details_canister_id;
+        envs.external_service_url = args.external_service_url;
+    })
+}
+
+pub fn get_envs() -> Envs {
+    ENVS.with(|env| {
+        let env = env.borrow();
+        Envs {
+            wizard_details_canister_id: env.wizard_details_canister_id.clone(),
+            external_service_url: env.external_service_url.clone(),
+        }
+    })
+}
 
 #[update]
 async fn query(
@@ -66,6 +93,7 @@ struct Body {
     response: String,
 }
 
+#[allow(non_snake_case)]
 #[derive(Deserialize, CandidType, Debug)]
 struct Response {
     statusCode: u16,
@@ -93,35 +121,29 @@ async fn chat(
     embedding: Vec<f32>,
     // history: Vec<History>,
 ) -> Result<Response, Error> {
-    // TODO: url to env
     // TODO: call vector db
     let wizard_details = match get_agent_details(agent_id).await {
-        None => return Err("wizard details not found"),
+        // TODO: change error type
+        None => return Err(Error::BodyNonSerializable),
+        // return Err("wizard details not found"),
         Some(value) => value,
     };
 
-    // TODO: need query text vector
     let data = ChatEndpoint {
-        // index_name: agent_id,
         input_prompt: query_text,
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
         embedding: embedding,
         // history,
     };
-    // TODO: get biography and greeting and query_text -> convert to prompt
-    // TODO: url to env
-    let response = post_json::<ChatEndpoint, Response>(
-        "https://d2lau6bs1ulmoj.cloudfront.net/canister-chat",
+    let external_url = get_envs().external_service_url;
+    let response: Result<Response, Error> = post_json::<ChatEndpoint, Response>(
+        format!("{}/canister-chat", external_url).as_str(),
         data,
     )
     .await;
-    ic_cdk::api::print(format!("data received {:?}", response));
     match response {
-        Ok(data) => {
-            ic_cdk::api::print(format!("{:?}\n\n\n", data));
-            Ok(data)
-        }
+        Ok(data) => Ok(data),
         Err(e) => Err(e),
     }
 }
