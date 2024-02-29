@@ -4,14 +4,19 @@ use ic_cdk::api::management_canister::http_request::{
     TransformContext,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::fmt::Debug;
 use url::Url;
 
-pub async fn post_json<T, R>(url: &str, body: T) -> Result<R, crate::Error>
+/// if None is passed to max_response_size, value of max_response_size is 5000_u64
+pub async fn post_json<T, R>(
+    url: &str,
+    body: T,
+    max_response_size: Option<u64>,
+) -> Result<R, crate::Error>
 where
-    T: Serialize + Debug,
-    R: DeserializeOwned + Debug,
+    T: Serialize,
+    R: DeserializeOwned,
 {
+    let max_response_size = max_response_size.unwrap_or(5000_u64);
     let parsed_url = match Url::parse(url) {
         Ok(url) => url,
         Err(_e) => return Err(crate::Error::ParseError),
@@ -53,22 +58,18 @@ where
     }
     // legacy code... does nothing!
     let context = Context { does_nothing: 0 };
-
     let request = CanisterHttpRequestArgument {
         url: url.to_string(),
         method: HttpMethod::POST,
         body: request_body,
-        // max_response_bytes: None,
-        max_response_bytes: Some(5000_u64), //optional for request
+        max_response_bytes: Some(max_response_size),
         transform: Some(TransformContext::from_name(
             "transform".to_string(),
             serde_json::to_vec(&context).unwrap(),
         )),
         headers: request_headers,
     };
-    // let cycles = 300_000_000_000;
-    // trail and error
-    let cycles = 1_903_155_600;
+    let cycles = calculate_cycles(&request, max_response_size);
 
     match http_request(request, cycles).await {
         Ok((response,)) => {
@@ -127,4 +128,18 @@ pub fn transform_impl(raw: TransformArgs) -> HttpResponse {
         ic_cdk::api::print(format!("Received an error from api: err = {:?}", raw));
     }
     return res;
+}
+
+fn calculate_cycles(request: &CanisterHttpRequestArgument, response_size: u64) -> u128 {
+    const SUBNET: u128 = 13;
+    let url_size = request.url.as_bytes().len() as u128;
+    let headers_size: u128 = request
+        .headers
+        .iter()
+        .map(|header| header.name.as_bytes().len() as u128 + header.value.as_bytes().len() as u128)
+        .sum();
+    let body_size = request.body.as_ref().map_or(0, |body| body.len() as u128);
+    let request_size = url_size + headers_size + body_size;
+    // formula from https://forum.dfinity.org/t/a-new-price-function-for-https-outcalls/
+    3_000_000 + 60_000 * SUBNET + 400 * request_size + 800 * u128::from(response_size)
 }
