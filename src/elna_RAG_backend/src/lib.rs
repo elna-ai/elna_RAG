@@ -78,7 +78,7 @@ struct History {
     content: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct ChatEndpoint {
     input_prompt: String,
     biography: String,
@@ -88,13 +88,13 @@ struct ChatEndpoint {
     // history: Vec<History>,
 }
 
-#[derive(Deserialize, CandidType, Debug)]
+#[derive(Deserialize, CandidType)]
 struct Body {
     response: String,
 }
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, CandidType, Debug)]
+#[derive(Deserialize, CandidType)]
 struct Response {
     statusCode: u16,
     body: Body,
@@ -140,6 +140,7 @@ async fn chat(
     let response: Result<Response, Error> = post_json::<ChatEndpoint, Response>(
         format!("{}/canister-chat", external_url).as_str(),
         data,
+        None,
     )
     .await;
     match response {
