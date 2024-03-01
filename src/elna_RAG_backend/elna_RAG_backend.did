@@ -21,5 +21,6 @@ type Result = variant { Ok : Response; Err : Error };
 type TransformArgs = record { context : vec nat8; response : HttpResponse };
 service : (Envs) -> {
   chat : (text, text, vec float32) -> (Result);
+  get_all_envs : () -> (Envs) query;
   transform : (TransformArgs) -> (HttpResponse) query;
 }
