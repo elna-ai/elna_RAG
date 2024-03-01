@@ -142,7 +142,15 @@ async fn chat(
 }
 
 
+#[query]
+fn get_all_envs()->Envs{
 
+    Envs{
+        wizard_details_canister_id:get_envs().wizard_details_canister_id,
+        external_service_url:get_envs().external_service_url,
+        vectordb_canister_id:get_envs().vectordb_canister_id
+    }
+}
 
 // required to process response from outbound http call
 // do not delete these.
