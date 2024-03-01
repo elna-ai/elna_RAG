@@ -69,7 +69,8 @@ where
         )),
         headers: request_headers,
     };
-    let cycles = calculate_cycles(&request, max_response_size);
+    // let cycles = calculate_cycles(&request, max_response_size);
+    let cycles=21_850_258_000;
 
     match http_request(request, cycles).await {
         Ok((response,)) => {

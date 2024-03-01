@@ -11,7 +11,7 @@ use helpers::canister_calls::get_agent_details;
 use helpers::prompt::get_prompt;
 use helpers::out_calls::post_json;
 use helpers::out_calls::transform_impl;
-use ic_cdk::{export_candid, query, update};
+use ic_cdk::{export_candid, query, update,post_upgrade};
 
 
 thread_local! {
@@ -24,7 +24,7 @@ pub struct Envs {
     vectordb_canister_id:String
 }
 
-#[init]
+#[post_upgrade]
 fn init(args: Envs) {
     ENVS.with(|envs| {
         let mut envs = envs.borrow_mut();
@@ -144,6 +144,7 @@ async fn chat(
 
 #[query]
 fn get_all_envs()->Envs{
+    // init();
 
     Envs{
         wizard_details_canister_id:get_envs().wizard_details_canister_id,
