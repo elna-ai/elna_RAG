@@ -1,19 +1,18 @@
 use candid::CandidType;
+mod types;
+
 use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
 use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
-use candid::Principal;
 use helpers::canister_calls::get_agent_details;
+use helpers::prompt::get_prompt;
 use helpers::out_calls::post_json;
 use helpers::out_calls::transform_impl;
-use ic_cdk::api::call::CallResult;
-use ic_cdk::api::call::RejectionCode;
-use ic_cdk::{export_candid, query, update};
+use ic_cdk::{export_candid, query, update,post_upgrade};
 
-type QueryResult = String;
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
@@ -22,6 +21,7 @@ thread_local! {
 pub struct Envs {
     wizard_details_canister_id: String,
     external_service_url: String,
+    vectordb_canister_id:String
 }
 
 #[init]
@@ -30,8 +30,15 @@ fn init(args: Envs) {
         let mut envs = envs.borrow_mut();
         envs.wizard_details_canister_id = args.wizard_details_canister_id;
         envs.external_service_url = args.external_service_url;
+        envs.vectordb_canister_id = args.vectordb_canister_id;
     })
 }
+
+#[post_upgrade]
+fn upgrade_env(args: Envs){
+    init(args);
+}
+
 
 pub fn get_envs() -> Envs {
     ENVS.with(|env| {
@@ -39,37 +46,11 @@ pub fn get_envs() -> Envs {
         Envs {
             wizard_details_canister_id: env.wizard_details_canister_id.clone(),
             external_service_url: env.external_service_url.clone(),
+            vectordb_canister_id:env.vectordb_canister_id.clone()
         }
     })
 }
 
-#[update]
-async fn query(
-    index_name: String,
-    q: Vec<f32>,
-    limit: i32,
-) -> Result<String, (RejectionCode, String)> {
-    // let word: String = "apple".to_string();
-    let result: CallResult<(QueryResult,)> = ic_cdk::call(
-        Principal::from_text("be2us-64aaa-aaaaa-qaabq-cai").unwrap(),
-        "query",
-        (index_name, q, limit),
-    )
-    .await;
-    // result
-
-    // Handle the result
-    match result {
-        Ok(response) => {
-            // println!("Inter-canister call successful: {}", response);
-            Ok(format!("{}", response.0))
-        }
-        Err(err) => {
-            // eprintln!("Error making inter-canister call: {}", err);
-            Err(err)
-        }
-    }
-}
 
 // TODO: make sure role can only be "user" or "assistant"?
 #[derive(Debug, Serialize, Deserialize, CandidType)]
@@ -78,17 +59,25 @@ struct History {
     content: String,
 }
 
-#[derive(Serialize, Deserialize)]
-struct ChatEndpoint {
-    input_prompt: String,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Agent {
+    query_text: String,
     biography: String,
     greeting: String,
-    embedding: Vec<f32>,
-    // index_name: String,
+    query_vector: Vec<f32>,
+    index_name: String,
     // history: Vec<History>,
 }
 
-#[derive(Deserialize, CandidType)]
+
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Message{
+    system_message:String,
+    user_message:String
+}
+
+#[derive(Deserialize, CandidType, Debug)]
 struct Body {
     response: String,
 }
@@ -114,32 +103,42 @@ pub enum Error {
 //     }
 // }
 
+
+
 #[update]
 async fn chat(
     agent_id: String,
     query_text: String,
-    embedding: Vec<f32>,
+    query_vector: Vec<f32>,
+    uuid:String
     // history: Vec<History>,
 ) -> Result<Response, Error> {
     // TODO: call vector db
-    let wizard_details = match get_agent_details(agent_id).await {
+    let wizard_details = match get_agent_details(agent_id.clone()).await {
         // TODO: change error type
         None => return Err(Error::BodyNonSerializable),
         // return Err("wizard details not found"),
         Some(value) => value,
     };
 
-    let data = ChatEndpoint {
-        input_prompt: query_text,
+    let agent = Agent {
+        query_text: query_text,
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
-        embedding: embedding,
+        query_vector: query_vector,
+        index_name:agent_id 
+        
         // history,
     };
+
+    let message = get_prompt(agent,2).await;
+
+
     let external_url = get_envs().external_service_url;
-    let response: Result<Response, Error> = post_json::<ChatEndpoint, Response>(
+    let response: Result<Response, Error> = post_json::<Message, Response>(
         format!("{}/canister-chat", external_url).as_str(),
-        data,
+        message,
+        uuid,
         None,
     )
     .await;
@@ -149,11 +148,46 @@ async fn chat(
     }
 }
 
+// #[update]
+// async fn post_test(uuid:String)->Result<Response, Error> {
+//     let message=Message{
+//         system_message:"you are a help full chatbot".to_string(),
+//         user_message:"What is blockchain".to_string()
+//     };
+
+//     let external_url = get_envs().external_service_url;
+//     let response: Result<Response, Error> = post_json::<Message, Response>(
+//         format!("{}/canister-chat", external_url).as_str(),
+//         message,
+//         uuid,
+//         None,
+//     )
+//     .await;
+//     match response {
+//         Ok(data) => Ok(data),
+//         Err(e) => Err(e),
+//     }
+
+// }
+
+#[query]
+fn get_all_envs()->Envs{
+    // init();
+
+    Envs{
+        wizard_details_canister_id:get_envs().wizard_details_canister_id,
+        external_service_url:get_envs().external_service_url,
+        vectordb_canister_id:get_envs().vectordb_canister_id
+    }
+}
+
 // required to process response from outbound http call
 // do not delete these.
 #[query]
 fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
 }
+
+
 
 export_candid!();
