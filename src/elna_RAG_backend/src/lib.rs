@@ -24,7 +24,7 @@ pub struct Envs {
     vectordb_canister_id:String
 }
 
-#[post_upgrade]
+#[init]
 fn init(args: Envs) {
     ENVS.with(|envs| {
         let mut envs = envs.borrow_mut();
@@ -32,6 +32,11 @@ fn init(args: Envs) {
         envs.external_service_url = args.external_service_url;
         envs.vectordb_canister_id = args.vectordb_canister_id;
     })
+}
+
+#[post_upgrade]
+fn upgrade_env(args: Envs){
+    init(args);
 }
 
 
@@ -105,6 +110,7 @@ async fn chat(
     agent_id: String,
     query_text: String,
     query_vector: Vec<f32>,
+    uuid:String
     // history: Vec<History>,
 ) -> Result<Response, Error> {
     // TODO: call vector db
@@ -132,6 +138,7 @@ async fn chat(
     let response: Result<Response, Error> = post_json::<Message, Response>(
         format!("{}/canister-chat", external_url).as_str(),
         message,
+        uuid,
         None,
     )
     .await;
@@ -141,6 +148,27 @@ async fn chat(
     }
 }
 
+// #[update]
+// async fn post_test(uuid:String)->Result<Response, Error> {
+//     let message=Message{
+//         system_message:"you are a help full chatbot".to_string(),
+//         user_message:"What is blockchain".to_string()
+//     };
+
+//     let external_url = get_envs().external_service_url;
+//     let response: Result<Response, Error> = post_json::<Message, Response>(
+//         format!("{}/canister-chat", external_url).as_str(),
+//         message,
+//         uuid,
+//         None,
+//     )
+//     .await;
+//     match response {
+//         Ok(data) => Ok(data),
+//         Err(e) => Err(e),
+//     }
+
+// }
 
 #[query]
 fn get_all_envs()->Envs{

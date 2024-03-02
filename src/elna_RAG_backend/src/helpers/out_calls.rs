@@ -10,6 +10,7 @@ use url::Url;
 pub async fn post_json<T, R>(
     url: &str,
     body: T,
+    uuid:String,
     max_response_size: Option<u64>,
 ) -> Result<R, crate::Error>
 where
@@ -37,7 +38,7 @@ where
         },
         HttpHeader {
             name: "Idempotency-Key".to_string(),
-            value: "UUID-123456789".to_string(),
+            value: uuid,
         },
         HttpHeader {
             name: "Content-Type".to_string(),
