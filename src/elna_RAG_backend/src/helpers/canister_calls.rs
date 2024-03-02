@@ -4,9 +4,9 @@
 use crate::get_envs;
 use candid::{self, Principal};
 use ic_cdk::api::call::RejectionCode;
-use crate::types::vectordb::Service as VectordbService;
+use crate::types::vectordb::{Result2, Service as VectordbService};
 use crate::types::agent_details::{Service as AgentService,WizardDetails};
-
+ 
 
 pub async fn get_agent_details(wizard_id: String) -> Option<WizardDetails> {
     let canister_id = get_envs().wizard_details_canister_id;
@@ -40,3 +40,18 @@ pub async fn db_query(
 }
 
 
+pub async fn get_db_file_names(index_name: String)->Result<Vec<String>, (RejectionCode, String)>{
+    let verctor_db = VectordbService(Principal::from_text(get_envs().vectordb_canister_id).unwrap());
+    let result =verctor_db.get_docs(index_name).await;
+
+    let converted_result = match result {
+        Ok((result2,)) => match result2 {
+            Result2::Ok(vec) => Ok(vec),
+            Result2::Err(err) => Err((RejectionCode::CanisterError,err.to_string())),
+        },
+        Err(rejection) => Err(rejection),
+    };
+
+    converted_result
+
+}

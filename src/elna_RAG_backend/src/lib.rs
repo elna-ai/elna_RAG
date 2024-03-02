@@ -1,16 +1,16 @@
 use candid::CandidType;
 mod types;
 
+use ic_cdk::api::call::RejectionCode;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
 use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
-use helpers::canister_calls::get_agent_details;
+use helpers::canister_calls::{get_agent_details,get_db_file_names};
 use helpers::prompt::get_prompt;
-use helpers::out_calls::post_json;
-use helpers::out_calls::transform_impl;
+use helpers::out_calls::{post_json,transform_impl};
 use ic_cdk::{export_candid, query, update,post_upgrade};
 
 
@@ -146,6 +146,14 @@ async fn chat(
         Ok(data) => Ok(data),
         Err(e) => Err(e),
     }
+}
+
+#[update]
+async fn get_file_names(index_name:String)->Result<Vec<String>,(RejectionCode,String)>{
+
+    let result = get_db_file_names(index_name).await;
+    result
+    
 }
 
 // #[update]
