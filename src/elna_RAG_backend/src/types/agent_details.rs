@@ -1,11 +1,8 @@
-
-// Generated from didc
-// TODO: move declarations into a separate module
-#![allow(dead_code, unused_imports)]
-use candid::{self, CandidType, Deserialize, Principal, Encode, Decode};
-use ic_cdk::api::call::CallResult ;
-
-
+// This is an experimental feature to generate Rust binding from Candid.
+// You may want to manually adjust some of the types.
+#![allow(dead_code, unused_imports, non_snake_case)]
+use candid::{self, CandidType, Decode, Deserialize, Encode, Principal};
+use ic_cdk::api::call::CallResult;
 
 #[derive(CandidType, Deserialize)]
 pub enum WizardVisibility {

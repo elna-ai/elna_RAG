@@ -16,11 +16,21 @@ type HttpResponse = record {
   body : vec nat8;
   headers : vec HttpHeader;
 };
+type RejectionCode = variant {
+  NoError;
+  CanisterError;
+  SysTransient;
+  DestinationInvalid;
+  Unknown;
+  SysFatal;
+  CanisterReject;
+};
 type Response = record { body : Body; statusCode : nat16 };
 type Result = variant { Ok : Response; Err : Error };
+type Result_1 = variant { Ok : vec text; Err : record { RejectionCode; text } };
 type TransformArgs = record { context : vec nat8; response : HttpResponse };
 service : (Envs) -> {
   chat : (text, text, vec float32, text) -> (Result);
-  get_all_envs : () -> (Envs) query;
+  get_file_names : (text) -> (Result_1);
   transform : (TransformArgs) -> (HttpResponse) query;
 }
