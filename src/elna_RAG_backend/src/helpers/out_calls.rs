@@ -10,7 +10,7 @@ use url::Url;
 pub async fn post_json<T, R>(
     url: &str,
     body: T,
-    uuid:String,
+    uuid: String,
     max_response_size: Option<u64>,
 ) -> Result<R, crate::Error>
 where
@@ -71,7 +71,7 @@ where
         headers: request_headers,
     };
     // let cycles = calculate_cycles(&request, max_response_size);
-    let cycles=21_850_258_000;
+    let cycles = 21_850_258_000;
 
     match http_request(request, cycles).await {
         Ok((response,)) => {
@@ -132,6 +132,7 @@ pub fn transform_impl(raw: TransformArgs) -> HttpResponse {
     return res;
 }
 
+// TODO: fix calculation error
 fn calculate_cycles(request: &CanisterHttpRequestArgument, response_size: u64) -> u128 {
     const SUBNET: u128 = 13;
     let url_size = request.url.as_bytes().len() as u128;
