@@ -15,6 +15,7 @@
 
 # rust
 target/
+wasms/
 
 # frontend code
 node_modules/
