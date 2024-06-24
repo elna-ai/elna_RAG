@@ -34,16 +34,23 @@ pub async fn db_query(
     }
 }
 
-pub async fn get_db_file_names(index_name: String) -> Result<Vec<String>, (RejectionCode, String)> {
+pub async fn get_db_file_names(
+    index_name: String,
+) -> Result<Vec<String>, (RejectionCode, String, String)> {
+    let caller = ic_cdk::api::caller();
     let vector_db = VectordbService(Principal::from_text(get_envs().vectordb_canister_id).unwrap());
     let result = vector_db.get_docs(index_name).await;
 
     match result {
         Ok((result2,)) => match result2 {
             Result1::Ok(vec) => Ok(vec),
-            Result1::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
+            Result1::Err(err) => Err((
+                RejectionCode::CanisterError,
+                err.to_string(),
+                caller.to_string(),
+            )),
         },
-        Err(rejection) => Err(rejection),
+        Err(rejection) => Err((rejection.0, rejection.1, caller.to_string())),
     }
 }
 

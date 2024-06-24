@@ -10,7 +10,7 @@ pub enum Error {
     UniqueViolation,
     DimensionMismatch,
     NotFound,
-    Unauthorized,
+    Unauthorized(String),
 }
 
 #[derive(CandidType, Deserialize)]
@@ -31,7 +31,7 @@ impl fmt::Display for Error {
             Error::UniqueViolation => write!(f, "UniqueViolation"),
             Error::DimensionMismatch => write!(f, "DimensionMismatch"),
             Error::NotFound => write!(f, "NotFound"),
-            Error::Unauthorized => write!(f, "Unauthorized"),
+            Error::Unauthorized(msg) => write!(f, "Unauthorized {msg}"),
         }
     }
 }

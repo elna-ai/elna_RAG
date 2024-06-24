@@ -8,7 +8,7 @@ use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
-use helpers::canister_calls::{get_agent_details, get_db_file_names,delete_collection_from_db};
+use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::out_calls::{post_json, transform_impl};
 use helpers::prompt::get_prompt;
 use ic_cdk::{export_candid, post_upgrade, query, update};
@@ -133,17 +133,16 @@ async fn chat(
 }
 
 #[update]
-async fn get_file_names(index_name: String) -> Result<Vec<String>, (RejectionCode, String)> {
+async fn get_file_names(
+    index_name: String,
+) -> Result<Vec<String>, (RejectionCode, String, String)> {
     get_db_file_names(index_name).await
 }
-
 
 #[update]
 async fn delete_collections_(index_name: String) -> Result<String, (RejectionCode, String)> {
     delete_collection_from_db(index_name).await
 }
-
-
 
 // required to process response from outbound http call
 // do not delete these.
