@@ -9,14 +9,12 @@ use std::cell::RefCell;
 mod helpers;
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::out_calls::{post_json, transform_impl};
-use helpers::prompt::get_prompt;
+// use helpers::prompt::get_prompt;
+use helpers::prompt::get_prompt_test;
 use ic_cdk::{export_candid, post_upgrade, query, update};
-use std::collections::HashMap;
-use time::OffsetDateTime;
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
-    static HISTORY_MAP: RefCell<HashMap<String, HashMap<String, Vec<History>>>> = RefCell::new(HashMap::new());
 
 }
 
@@ -54,19 +52,6 @@ pub fn get_envs() -> Envs {
     })
 }
 
-#[derive(Debug, Serialize, Deserialize, CandidType, Clone)]
-pub enum Roles {
-    System,
-    User,
-    Assistant,
-}
-#[derive(Debug, Serialize, Deserialize, CandidType, Clone)]
-pub struct History {
-    role: Roles,
-    content: String,
-    timestamp:String,
-
-}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Agent {
     query_text: String,
@@ -104,45 +89,45 @@ pub enum Error {
 }
 
 
-#[update]
-async fn chat(
-    agent_id: String,
-    query_text: String,
-    query_vector: Vec<f32>,
-    uuid: String, // history: Vec<History>,
-) -> Result<Response, Error> {
-    // TODO: call vector db
-    let wizard_details = match get_agent_details(agent_id.clone()).await {
-        // TODO: change error type
-        None => return Err(Error::BodyNonSerializable),
-        // return Err("wizard details not found"),
-        Some(value) => value,
-    };
+// #[update]
+// async fn chat(
+//     agent_id: String,
+//     query_text: String,
+//     query_vector: Vec<f32>,
+//     uuid: String, // history: Vec<History>,
+// ) -> Result<Response, Error> {
+//     // TODO: call vector db
+//     let wizard_details = match get_agent_details(agent_id.clone()).await {
+//         // TODO: change error type
+//         None => return Err(Error::BodyNonSerializable),
+//         // return Err("wizard details not found"),
+//         Some(value) => value,
+//     };
 
-    let agent = Agent {
-        query_text: query_text,
-        biography: wizard_details.biography,
-        greeting: wizard_details.greeting,
-        // query_vector: query_vector,
-        index_name: agent_id,
-        //TODO: add history,
-    };
+//     let agent = Agent {
+//         query_text: query_text,
+//         biography: wizard_details.biography,
+//         greeting: wizard_details.greeting,
+//         // query_vector: query_vector,
+//         index_name: agent_id,
+//         //TODO: add history,
+//     };
 
-    let message = get_prompt(agent, 2).await;
+//     let message = get_prompt(agent, 2).await;
 
-    let external_url = get_envs().external_service_url;
-    let response: Result<Response, Error> = post_json::<Message, Response>(
-        format!("{}/canister-chat", external_url).as_str(),
-        message,
-        uuid,
-        None,
-    )
-    .await;
-    match response {
-        Ok(data) => Ok(data),
-        Err(e) => Err(e),
-    }
-}
+//     let external_url = get_envs().external_service_url;
+//     let response: Result<Response, Error> = post_json::<Message, Response>(
+//         format!("{}/canister-chat", external_url).as_str(),
+//         message,
+//         uuid,
+//         None,
+//     )
+//     .await;
+//     match response {
+//         Ok(data) => Ok(data),
+//         Err(e) => Err(e),
+//     }
+// }
 
 #[update]
 async fn testchat(
@@ -170,7 +155,7 @@ async fn testchat(
         //TODO: add history,
     };
 
-    let message = get_prompt(agent, 2).await;
+    let message = get_prompt_test(agent, 2).await;
 
     let external_url = get_envs().external_service_url;
     let response: Result<Response, Error> = post_json::<Message, Response>(

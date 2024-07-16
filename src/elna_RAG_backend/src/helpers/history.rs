@@ -1,8 +1,14 @@
+// src/history.rs
+
 use std::collections::HashMap;
+use std::cell::RefCell;
+use serde::{Serialize, Deserialize};
+use candid::CandidType;
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 
 thread_local! {
     static HISTORY_MAP: RefCell<HashMap<String, HashMap<String, Vec<History>>>> = RefCell::new(HashMap::new());
-
 }
 
 #[derive(Debug, Serialize, Deserialize, CandidType, Clone)]
@@ -11,24 +17,26 @@ pub enum Roles {
     User,
     Assistant,
 }
+
 #[derive(Debug, Serialize, Deserialize, CandidType, Clone)]
 pub struct History {
     role: Roles,
     content: String,
-    timestamp:String,
-
+    timestamp: String,
 }
 
 impl History {
     pub fn record_history(role: Roles, content: String, agent_id: String) {
+        let now = OffsetDateTime::now_utc();
+        let timestamp = now.format(&Rfc3339).unwrap();
+
         let history_entry = History {
             role,
             content,
-            timestamp: Utc::now().to_string(),
-    
+            timestamp,
         };
         let caller = ic_cdk::api::caller();
-    
+
         HISTORY_MAP.with(|map| {
             let mut map = map.borrow_mut();
             map.entry(caller.clone().to_string())
@@ -36,8 +44,8 @@ impl History {
                 .entry(agent_id.clone())
                 .or_insert_with(Vec::new)
                 .push(history_entry);
-        });}
-    
+        });
+    }
 
     pub fn read_history(caller_id: String, agent_id: String) -> Vec<History> {
         HISTORY_MAP.with(|map| {
@@ -47,7 +55,5 @@ impl History {
                 .cloned()
                 .unwrap_or_else(Vec::new)
         })
-    
+    }
 }
-}
-
