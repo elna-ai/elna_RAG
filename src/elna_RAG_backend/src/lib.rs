@@ -60,7 +60,7 @@ pub struct Agent {
     greeting: String,
     // query_vector: Vec<f32>,
     index_name: String,
-    // history: Vec<History>,
+    history: Vec<History>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -145,6 +145,12 @@ async fn testchat(
     //     Some(value) => value,
     // };
 
+        
+    let caller = ic_cdk::api::caller();
+
+    let agent_history = History::read_history(caller.to_string(),agent_id.clone());
+
+    History::record_history(Roles::User, query_text.clone(), agent_id.clone());
     let agent = Agent {
         query_text: query_text,
         // biography: wizard_details.biography,
@@ -152,8 +158,8 @@ async fn testchat(
         biography:String::from("A medical chat assistant"),
         greeting: String::from("Hello Good Morning!"),
         // query_vector: query_vector,
-        index_name: agent_id,
-        //TODO: add history,
+        index_name: agent_id.clone(),
+        history:agent_history
     };
 
     let message = get_prompt_test(agent, 2).await;
@@ -167,10 +173,15 @@ async fn testchat(
     )
     .await;
     match response {
-        Ok(data) => Ok(data),
+        Ok(data) => {
+            // Add the assistant message to the history
+            History::record_history( Roles::Assistant, data.body.response.clone(), agent_id.clone());
+            Ok(data)
+        },
         Err(e) => Err(e),
     }
-}
+    }
+    
 
 #[update]
 async fn get_file_names(
@@ -189,6 +200,12 @@ async fn delete_collections_(index_name: String) -> Result<String, (RejectionCod
 #[query]
 fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
+}
+
+#[query]
+fn history_test(agent_id:String)->Vec<History>{
+    let caller = ic_cdk::api::caller();
+    History::read_history(caller.to_string(),agent_id.clone())    
 }
 
 

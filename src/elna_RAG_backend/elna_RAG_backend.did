@@ -1,0 +1,44 @@
+type Body = record { response : text };
+type Envs = record {
+  external_service_url : text;
+  wizard_details_canister_id : text;
+  vectordb_canister_id : text;
+};
+type Error = variant {
+  CantParseHost;
+  BodyNonSerializable;
+  ParseError;
+  HttpError : text;
+};
+type History = record { content : text; role : Roles };
+type HttpHeader = record { value : text; name : text };
+type HttpResponse = record {
+  status : nat;
+  body : vec nat8;
+  headers : vec HttpHeader;
+};
+type RejectionCode = variant {
+  NoError;
+  CanisterError;
+  SysTransient;
+  DestinationInvalid;
+  Unknown;
+  SysFatal;
+  CanisterReject;
+};
+type Response = record { body : Body; statusCode : nat16 };
+type Result = variant { Ok : text; Err : record { RejectionCode; text } };
+type Result_1 = variant {
+  Ok : vec text;
+  Err : record { RejectionCode; text; text };
+};
+type Result_2 = variant { Ok : Response; Err : Error };
+type Roles = variant { System; User; Assistant };
+type TransformArgs = record { context : vec nat8; response : HttpResponse };
+service : (Envs) -> {
+  delete_collections_ : (text) -> (Result);
+  get_file_names : (text) -> (Result_1);
+  history_test : (text) -> (vec History) query;
+  testchat : (text, text, text) -> (Result_2);
+  transform : (TransformArgs) -> (HttpResponse) query;
+}
