@@ -61,7 +61,7 @@ pub struct Agent {
     query_text: String,
     biography: String,
     greeting: String,
-    query_vector: Vec<f32>,
+    // query_vector: Vec<f32>,
     index_name: String,
     // history: Vec<History>,
 }
@@ -93,25 +93,27 @@ pub enum Error {
 }
 
 #[update]
-async fn chat(
+async fn testchat(
     agent_id: String,
     query_text: String,
-    query_vector: Vec<f32>,
+    // query_vector: Vec<f32>,
     uuid: String, // history: Vec<History>,
 ) -> Result<Response, Error> {
     // TODO: call vector db
-    let wizard_details = match get_agent_details(agent_id.clone()).await {
-        // TODO: change error type
-        None => return Err(Error::BodyNonSerializable),
-        // return Err("wizard details not found"),
-        Some(value) => value,
-    };
+    // let wizard_details = match get_agent_details(agent_id.clone()).await {
+    //     // TODO: change error type
+    //     None => return Err(Error::BodyNonSerializable),
+    //     // return Err("wizard details not found"),
+    //     Some(value) => value,
+    // };
 
     let agent = Agent {
         query_text: query_text,
-        biography: wizard_details.biography,
-        greeting: wizard_details.greeting,
-        query_vector: query_vector,
+        // biography: wizard_details.biography,
+        // greeting: wizard_details.greeting,
+        biography:String::from("A medical chat assistant"),
+        greeting: String::from("Hello Good Morning!"),
+        // query_vector: query_vector,
         index_name: agent_id,
         //TODO: add history,
     };
@@ -151,4 +153,4 @@ fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
 }
 
-export_candid!();
+ic_cdk_macros::export_candid!();
