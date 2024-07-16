@@ -12,7 +12,7 @@ use helpers::out_calls::{post_json, transform_impl};
 use helpers::prompt::get_prompt;
 use ic_cdk::{export_candid, post_upgrade, query, update};
 use std::collections::HashMap;
-use chrono::Utc;
+use time::OffsetDateTime;
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
@@ -103,6 +103,47 @@ pub enum Error {
     BodyNonSerializable,
 }
 
+
+#[update]
+async fn chat(
+    agent_id: String,
+    query_text: String,
+    query_vector: Vec<f32>,
+    uuid: String, // history: Vec<History>,
+) -> Result<Response, Error> {
+    // TODO: call vector db
+    let wizard_details = match get_agent_details(agent_id.clone()).await {
+        // TODO: change error type
+        None => return Err(Error::BodyNonSerializable),
+        // return Err("wizard details not found"),
+        Some(value) => value,
+    };
+
+    let agent = Agent {
+        query_text: query_text,
+        biography: wizard_details.biography,
+        greeting: wizard_details.greeting,
+        // query_vector: query_vector,
+        index_name: agent_id,
+        //TODO: add history,
+    };
+
+    let message = get_prompt(agent, 2).await;
+
+    let external_url = get_envs().external_service_url;
+    let response: Result<Response, Error> = post_json::<Message, Response>(
+        format!("{}/canister-chat", external_url).as_str(),
+        message,
+        uuid,
+        None,
+    )
+    .await;
+    match response {
+        Ok(data) => Ok(data),
+        Err(e) => Err(e),
+    }
+}
+
 #[update]
 async fn testchat(
     agent_id: String,
@@ -164,4 +205,6 @@ fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
 }
 
-ic_cdk_macros::export_candid!();
+
+
+export_candid!();
