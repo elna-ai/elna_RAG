@@ -6,7 +6,6 @@ use serde::{Serialize, Deserialize};
 use candid::CandidType;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
-
 thread_local! {
     static HISTORY_MAP: RefCell<HashMap<String, HashMap<String, Vec<History>>>> = RefCell::new(HashMap::new());
 }
@@ -27,13 +26,12 @@ pub struct History {
 
 impl History {
     pub fn record_history(role: Roles, content: String, agent_id: String) {
-        let now = OffsetDateTime::now_utc();
-        let timestamp = now.format(&Rfc3339).unwrap();
-
+        let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+        let time=now.format(&Rfc3339).unwrap();
         let history_entry = History {
             role,
             content,
-            timestamp,
+            timestamp: time,
         };
         let caller = ic_cdk::api::caller();
 
