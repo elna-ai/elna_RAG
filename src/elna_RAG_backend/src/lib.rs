@@ -1,6 +1,5 @@
 use candid::CandidType;
 mod types;
-
 use ic_cdk::api::call::RejectionCode;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
@@ -12,10 +11,16 @@ use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_
 use helpers::out_calls::{post_json, transform_impl};
 use helpers::prompt::get_prompt;
 use ic_cdk::{export_candid, post_upgrade, query, update};
+use std::collections::HashMap;
+use chrono::Utc;
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
+    static HISTORY_MAP: RefCell<HashMap<String, HashMap<String, Vec<History>>>> = RefCell::new(HashMap::new());
+
 }
+
+
 #[derive(Deserialize, CandidType, Debug, Default)]
 pub struct Envs {
     wizard_details_canister_id: String,
@@ -49,13 +54,19 @@ pub fn get_envs() -> Envs {
     })
 }
 
-// TODO: make sure role can only be "user" or "assistant"?
-#[derive(Debug, Serialize, Deserialize, CandidType)]
-struct History {
-    role: String,
-    content: String,
+#[derive(Debug, Serialize, Deserialize, CandidType, Clone)]
+pub enum Roles {
+    System,
+    User,
+    Assistant,
 }
+#[derive(Debug, Serialize, Deserialize, CandidType, Clone)]
+pub struct History {
+    role: Roles,
+    content: String,
+    timestamp:String,
 
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Agent {
     query_text: String,
@@ -73,7 +84,7 @@ pub struct Message {
 }
 
 #[derive(Deserialize, CandidType, Debug)]
-struct Body {
+pub struct Body {
     response: String,
 }
 
