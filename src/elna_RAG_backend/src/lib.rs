@@ -1,3 +1,4 @@
+
 use candid::CandidType;
 mod types;
 use ic_cdk::api::call::RejectionCode;
@@ -5,9 +6,9 @@ use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
 use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
+use std::borrow::Borrow;
 use std::cell::RefCell;
 mod helpers;
-
 use helpers::history::{Roles,History};
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::out_calls::{post_json, transform_impl};
@@ -137,7 +138,7 @@ async fn testchat(
     agent_id: String,
     query_text: String,
     // query_vector: Vec<f32>,
-    uuid: String, // history: Vec<History>,
+    uuid: i32, // history: Vec<History>,
 ) -> Result<Response, Error> {
     // TODO: call vector db
     // let wizard_details = match get_agent_details(agent_id.clone()).await {
@@ -163,14 +164,14 @@ async fn testchat(
         index_name: agent_id.clone(),
         history:agent_history
     };
-
-    let message = get_prompt_test(agent, 2).await;
+    let hist_uid=uuid.borrow()+100;
+    let message = get_prompt_test(agent, 2,hist_uid.to_string().clone()).await;
 
     let external_url = get_envs().external_service_url;
     let response: Result<Response, Error> = post_json::<Message, Response>(
         format!("{}/canister-chat", external_url).as_str(),
         message,
-        uuid,
+        uuid.to_string().clone(),
         None,
     )
     .await;
