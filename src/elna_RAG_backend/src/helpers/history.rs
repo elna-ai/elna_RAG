@@ -19,8 +19,8 @@ pub enum Roles {
 
 #[derive(Debug, Serialize, Deserialize, CandidType, Clone)]
 pub struct History {
-    role: Roles,
-    content: String,
+    pub role: Roles,
+    pub content: String,
     // timestamp: String,
 }
 

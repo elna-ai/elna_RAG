@@ -39,6 +39,7 @@ service : (Envs) -> {
   delete_collections_ : (text) -> (Result);
   get_file_names : (text) -> (Result_1);
   history_test : (text) -> (vec History) query;
+  summarise_history_test : (text, text) -> (text);
   testchat : (text, text, text) -> (Result_2);
   transform : (TransformArgs) -> (HttpResponse) query;
 }

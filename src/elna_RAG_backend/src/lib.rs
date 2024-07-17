@@ -7,11 +7,13 @@ use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
+
 use helpers::history::{Roles,History};
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::out_calls::{post_json, transform_impl};
 // use helpers::prompt::get_prompt;
 use helpers::prompt::get_prompt_test;
+use helpers::prompt::summarise_history;
 use ic_cdk::{export_candid, post_upgrade, query, update};
 
 thread_local! {
@@ -207,6 +209,17 @@ fn history_test(agent_id:String)->Vec<History>{
     let caller = ic_cdk::api::caller();
     History::read_history(caller.to_string(),agent_id.clone())    
 }
+
+
+#[update]
+pub async fn summarise_history_test(agent_id:String,uuid:String)->String{
+    let caller = ic_cdk::api::caller();
+    let agent_history=History::read_history(caller.to_string(),agent_id.clone());
+    let hist=summarise_history(agent_history,uuid).await;
+    hist
+
+}
+
 
 
 

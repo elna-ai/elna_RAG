@@ -1,6 +1,8 @@
 use crate::helpers::canister_calls::db_query;
-use crate::Agent;
-use crate::Message;
+use crate::{Agent,Message,Response,Error,get_envs};
+use crate::helpers::history::History;
+use std::fmt::Write;
+use crate::helpers::out_calls::post_json;
 use ic_cdk::api::call::RejectionCode;
 
 // pub async fn get_prompt(agent: Agent, limit: i32) -> Message {
@@ -39,6 +41,64 @@ use ic_cdk::api::call::RejectionCode;
 //     };
 //     message
 // }
+
+pub async fn summarise_history(history_entries:Vec<History>,uuid:String ) -> String {
+    
+    let mut history_string = String::new();
+    
+    for history in history_entries {
+        writeln!(
+            history_string,
+            "{:?}: {} (at time)",
+            history.role, history.content, //history.timestamp
+        ).unwrap();
+    }
+    
+    let history_prompt = String::from("Summarise the following conversation without missing any important details");
+
+    let message = Message{
+        system_message:history_prompt,
+        user_message: history_string 
+    };
+    
+    
+    
+    let external_url = get_envs().external_service_url;
+    
+    let response: Result<Response, Error> = post_json::<Message, Response>(
+        format!("{}/canister-chat", external_url).as_str(),
+        message,
+        uuid,
+        None,
+    )
+    .await;
+    
+    match response {
+        Ok(data) => {
+            // Add the assistant message to the history
+      
+
+                data.body.response
+            
+     
+        
+        },
+    
+        Err(e) => {
+            // Handle the error properly
+            format!(
+                ""      
+            )
+    
+        },
+    
+    
+    }
+
+}
+
+
+
 
 pub async fn get_prompt_test(agent: Agent, limit: i32) -> Message {
     let base_template= format!("You are an AI chatbot equipped with the biography of \"{}\".
