@@ -40,6 +40,6 @@ service : (Envs) -> {
   get_file_names : (text) -> (Result_1);
   history_test : (text) -> (vec History) query;
   summarise_history_test : (text, text) -> (text);
-  testchat : (text, text, int32) -> (Result_2);
+  testchat : (text, text, int32, opt vec History) -> (Result_2);
   transform : (TransformArgs) -> (HttpResponse) query;
 }

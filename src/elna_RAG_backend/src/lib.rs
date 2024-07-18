@@ -8,6 +8,7 @@ use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 use std::cell::RefCell;
+use std::option;
 mod helpers;
 use helpers::history::{Roles,History};
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
@@ -93,6 +94,8 @@ pub enum Error {
 }
 
 
+
+
 // #[update]
 // async fn chat(
 //     agent_id: String,
@@ -138,8 +141,7 @@ async fn testchat(
     agent_id: String,
     query_text: String,
     // query_vector: Vec<f32>,
-    uuid: i32, // history: Vec<History>,
-) -> Result<Response, Error> {
+    uuid: i32, history: Option<Vec<History>>) -> Result<Response, Error> {
     // TODO: call vector db
     // let wizard_details = match get_agent_details(agent_id.clone()).await {
     //     // TODO: change error type
@@ -147,13 +149,21 @@ async fn testchat(
     //     // return Err("wizard details not found"),
     //     Some(value) => value,
     // };
+   
+    let agent_history: Vec<History>;
 
-        
-    let caller = ic_cdk::api::caller();
+    match history.clone() {
+        Some(data) => {
+            agent_history = data;
+        }
+        None => {
+            
+            let caller = ic_cdk::api::caller();
 
-    let agent_history = History::read_history(caller.to_string(),agent_id.clone());
-
-    History::record_history(Roles::User, query_text.clone(), agent_id.clone());
+            agent_history  = History::read_history(caller.to_string(), agent_id.clone());
+            
+        }
+    }
     let agent = Agent {
         query_text: query_text,
         // biography: wizard_details.biography,
@@ -177,13 +187,18 @@ async fn testchat(
     .await;
     match response {
         Ok(data) => {
-            // Add the assistant message to the history
-            History::record_history( Roles::Assistant, data.body.response.clone(), agent_id.clone());
-            Ok(data)
-        },
+            match history{
+                Some(hist)=>Ok(data),
+                None=> {
+                    History::record_history( Roles::Assistant, data.body.response.clone(), agent_id.clone());
+                    Ok(data)
+                        }   
+        }}
         Err(e) => Err(e),
     }
-    }
+
+}
+    
     
 
 #[update]
@@ -208,6 +223,7 @@ fn transform(raw: TransformArgs) -> HttpResponse {
 #[query]
 fn history_test(agent_id:String)->Vec<History>{
     let caller = ic_cdk::api::caller();
+    ic_cdk::println!("{:?}",caller);
     History::read_history(caller.to_string(),agent_id.clone())    
 }
 
