@@ -92,6 +92,11 @@ pub enum Error {
     HttpError(String),
     BodyNonSerializable,
 }
+#[derive(CandidType, Debug,Clone)]
+pub enum  MyOption<T>{
+    Some(Vec<T>),
+    None
+}
 
 
 
@@ -136,12 +141,14 @@ pub enum Error {
 //     }
 // }
 
+
+
 #[update]
 async fn testchat(
     agent_id: String,
     query_text: String,
     // query_vector: Vec<f32>,
-    uuid: i32, history: Option<Vec<History>>) -> Result<Response, Error> {
+    uuid: i32, history:Vec<History>) -> Result<Response, Error> {
     // TODO: call vector db
     // let wizard_details = match get_agent_details(agent_id.clone()).await {
     //     // TODO: change error type
@@ -149,21 +156,13 @@ async fn testchat(
     //     // return Err("wizard details not found"),
     //     Some(value) => value,
     // };
-   
-    let agent_history: Vec<History>;
 
-    match history.clone() {
-        Some(data) => {
-            agent_history = data;
-        }
-        None => {
-            
-            let caller = ic_cdk::api::caller();
-
-            agent_history  = History::read_history(caller.to_string(), agent_id.clone());
-            
-        }
-    }
+    let agent_history: Vec<History> = if history.is_empty() {
+        let caller = ic_cdk::api::caller();
+        History::read_history(caller.to_string(), agent_id.clone())
+    } else {
+        history.clone()
+    };
     let agent = Agent {
         query_text: query_text,
         // biography: wizard_details.biography,
@@ -187,13 +186,12 @@ async fn testchat(
     .await;
     match response {
         Ok(data) => {
-            match history{
-                Some(hist)=>Ok(data),
-                None=> {
-                    History::record_history( Roles::Assistant, data.body.response.clone(), agent_id.clone());
-                    Ok(data)
-                        }   
-        }}
+            // Record history if it was None initially
+            if history.is_empty() {
+                History::record_history(Roles::Assistant, data.body.response.clone(), agent_id.clone());
+            }
+            Ok(data)
+        }
         Err(e) => Err(e),
     }
 
