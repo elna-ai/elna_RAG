@@ -99,45 +99,6 @@ pub enum  MyOption<T>{
 
 
 
-// #[update]
-// async fn chat(
-//     agent_id: String,
-//     query_text: String,
-//     query_vector: Vec<f32>,
-//     uuid: String, // history: Vec<History>,
-// ) -> Result<Response, Error> {
-//     // TODO: call vector db
-//     let wizard_details = match get_agent_details(agent_id.clone()).await {
-//         // TODO: change error type
-//         None => return Err(Error::BodyNonSerializable),
-//         // return Err("wizard details not found"),
-//         Some(value) => value,
-//     };
-
-//     let agent = Agent {
-//         query_text: query_text,
-//         biography: wizard_details.biography,
-//         greeting: wizard_details.greeting,
-//         // query_vector: query_vector,
-//         index_name: agent_id,
-//         //TODO: add history,
-//     };
-
-//     let message = get_prompt(agent, 2).await;
-
-//     let external_url = get_envs().external_service_url;
-//     let response: Result<Response, Error> = post_json::<Message, Response>(
-//         format!("{}/canister-chat", external_url).as_str(),
-//         message,
-//         uuid,
-//         None,
-//     )
-//     .await;
-//     match response {
-//         Ok(data) => Ok(data),
-//         Err(e) => Err(e),
-//     }
-// }
 
 
 
@@ -217,22 +178,7 @@ fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
 }
 
-// #[query]
-// fn history_test(agent_id:String)->Vec<History>{
-//     let caller = ic_cdk::api::caller();
-//     ic_cdk::println!("{:?}",caller);
-//     History::read_history(caller.to_string(),agent_id.clone())    
-// }
 
-
-// #[update]
-// pub async fn summarise_history_test(agent_id:String,uuid:String)->String{
-//     let caller = ic_cdk::api::caller();
-//     let agent_history=History::read_history(caller.to_string(),agent_id.clone());
-//     let hist=summarise_history(agent_history,uuid).await;
-//     hist
-
-// }
 
 
 
