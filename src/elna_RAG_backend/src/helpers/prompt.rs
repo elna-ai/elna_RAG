@@ -105,7 +105,7 @@ pub async fn summarise_history(history_entries:Vec<History>,uuid:String ) -> Str
 
 
 
-pub async fn get_prompt_test(agent: Agent, limit: i32,uuid:String) -> Message {
+pub async fn get_prompt(agent: Agent, limit: i32,uuid:String) -> Message {
     let base_template= format!("You are an AI chatbot equipped with the biography of \"{}\".
     Please tell the user about your function and capabilities, when they ask you about yourself.
     You always provide useful information corresponding to the context of the user's question, pulling information from the trained data of your LLM, your biography and the uploaded content delimited by triple backticks.
@@ -146,5 +146,5 @@ pub async fn get_prompt_test(agent: Agent, limit: i32,uuid:String) -> Message {
     };
 
     message
-    
+
 }

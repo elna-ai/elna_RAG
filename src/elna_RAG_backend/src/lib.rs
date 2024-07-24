@@ -1,4 +1,3 @@
-
 use candid::CandidType;
 mod types;
 use ic_cdk::api::call::RejectionCode;
@@ -14,8 +13,7 @@ use helpers::history::{Roles,History};
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::out_calls::{post_json, transform_impl};
 // use helpers::prompt::get_prompt;
-use helpers::prompt::get_prompt_test;
-use helpers::prompt::summarise_history;
+use helpers::prompt::get_prompt;
 use ic_cdk::{export_candid, post_upgrade, query, update};
 
 thread_local! {
@@ -173,8 +171,8 @@ async fn chat(
     };
 
     let hist_uid=uuid.clone()+100;
-    
-    let message = get_prompt_test(agent, 2,hist_uid.to_string()).await;
+
+    let message = get_prompt(agent, 2,hist_uid.to_string()).await;
 
     let external_url = get_envs().external_service_url;
 
