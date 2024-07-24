@@ -10,7 +10,6 @@ mod helpers;
 use helpers::history::{Roles,History};
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::out_calls::{post_json, transform_impl};
-// use helpers::prompt::get_prompt;
 use helpers::prompt::get_prompt;
 use ic_cdk::{export_candid, post_upgrade, query, update};
 
