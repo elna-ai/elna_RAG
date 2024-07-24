@@ -62,7 +62,7 @@ pub struct Agent {
     query_text: String,
     biography: String,
     greeting: String,
-    // query_vector: Vec<f32>,
+    query_vector: Vec<f32>,
     index_name: String,
     history: Vec<History>,
 }
@@ -144,18 +144,17 @@ pub enum  MyOption<T>{
 
 
 #[update]
-async fn testchat(
+async fn chat(
     agent_id: String,
     query_text: String,
-    // query_vector: Vec<f32>,
+    query_vector: Vec<f32>,
     uuid: i32, history:Vec<History>) -> Result<Response, Error> {
-    // TODO: call vector db
-    // let wizard_details = match get_agent_details(agent_id.clone()).await {
-    //     // TODO: change error type
-    //     None => return Err(Error::BodyNonSerializable),
-    //     // return Err("wizard details not found"),
-    //     Some(value) => value,
-    // };
+    let wizard_details = match get_agent_details(agent_id.clone()).await {
+        // TODO: change error type
+        None => return Err(Error::BodyNonSerializable),
+        // return Err("wizard details not found"),
+        Some(value) => value,
+    };
 
     let agent_history: Vec<History> = if history.is_empty() {
         let caller = ic_cdk::api::caller();
@@ -165,16 +164,14 @@ async fn testchat(
     };
     let agent = Agent {
         query_text: query_text,
-        // biography: wizard_details.biography,
-        // greeting: wizard_details.greeting,
-        biography:String::from("A medical chat assistant"),
-        greeting: String::from("Hello Good Morning!"),
-        // query_vector: query_vector,
+        biography: wizard_details.biography,
+        greeting: wizard_details.greeting,
+        query_vector: query_vector,
         index_name: agent_id.clone(),
         history:agent_history
     };
-    let hist_uid=uuid.borrow()+100;
-    let message = get_prompt_test(agent, 2,hist_uid.to_string().clone()).await;
+    let hist_uid=uuid.clone()+100;
+    let message = get_prompt_test(agent, 2,hist_uid.to_string()).await;
 
     let external_url = get_envs().external_service_url;
     let response: Result<Response, Error> = post_json::<Message, Response>(
