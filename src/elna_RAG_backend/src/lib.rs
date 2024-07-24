@@ -162,6 +162,7 @@ async fn chat(
     } else {
         history.clone()
     };
+
     let agent = Agent {
         query_text: query_text,
         biography: wizard_details.biography,
@@ -170,10 +171,13 @@ async fn chat(
         index_name: agent_id.clone(),
         history:agent_history
     };
+
     let hist_uid=uuid.clone()+100;
+    
     let message = get_prompt_test(agent, 2,hist_uid.to_string()).await;
 
     let external_url = get_envs().external_service_url;
+
     let response: Result<Response, Error> = post_json::<Message, Response>(
         format!("{}/canister-chat", external_url).as_str(),
         message,
@@ -215,22 +219,22 @@ fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
 }
 
-#[query]
-fn history_test(agent_id:String)->Vec<History>{
-    let caller = ic_cdk::api::caller();
-    ic_cdk::println!("{:?}",caller);
-    History::read_history(caller.to_string(),agent_id.clone())    
-}
+// #[query]
+// fn history_test(agent_id:String)->Vec<History>{
+//     let caller = ic_cdk::api::caller();
+//     ic_cdk::println!("{:?}",caller);
+//     History::read_history(caller.to_string(),agent_id.clone())    
+// }
 
 
-#[update]
-pub async fn summarise_history_test(agent_id:String,uuid:String)->String{
-    let caller = ic_cdk::api::caller();
-    let agent_history=History::read_history(caller.to_string(),agent_id.clone());
-    let hist=summarise_history(agent_history,uuid).await;
-    hist
+// #[update]
+// pub async fn summarise_history_test(agent_id:String,uuid:String)->String{
+//     let caller = ic_cdk::api::caller();
+//     let agent_history=History::read_history(caller.to_string(),agent_id.clone());
+//     let hist=summarise_history(agent_history,uuid).await;
+//     hist
 
-}
+// }
 
 
 
