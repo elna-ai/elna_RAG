@@ -5,7 +5,6 @@ use std::fmt::Write;
 use crate::helpers::out_calls::post_json;
 use std::cell::RefCell;
 use ic_cdk::api::call::RejectionCode;
-
 use super::history;
 
 
@@ -13,28 +12,13 @@ thread_local! {
     static SUMMARY: RefCell<String> = RefCell::new(String::new());
 }
 
-pub async fn summarise_history(history_entries:Vec<History>,uuid:String ) -> String {
+pub async fn summarise_history(history_entries:Vec<History>,uuid:String,mut history_string:String ) -> String {
 
-    if history_entries.len()==1 {
-        return String::from("");
-    }
-    
-    
-    let mut history_string = String::new();
 
-    
+
     SUMMARY.with(|summary| {
         let summary = summary.borrow();
-        if summary.is_empty() {
-            for history in &history_entries {
-                writeln!(
-                    history_string,
-                    "{:?}: {}",
-                    history.role, history.content, // history.timestamp
-                )
-                .unwrap();
-            }
-        } else {
+        if !summary.is_empty() {
             history_string = summary.clone();
             let last_two_entries= &history_entries[history_entries.len()-2..];
             for entry in last_two_entries {
@@ -45,8 +29,9 @@ pub async fn summarise_history(history_entries:Vec<History>,uuid:String ) -> Str
                 )
                 .unwrap();
             }
-
         }
+
+        
     });
     
     let history_prompt = String::from("Summarise the following conversation without missing any important details");
@@ -131,7 +116,7 @@ pub async fn get_prompt(agent: Agent, limit: i32,uuid:String) -> Message {
 
     let history:String ={
         if history_string.len()>500{
-        summarise_history(agent.history, uuid).await
+        summarise_history(agent.history, uuid,history_string).await
     }
         else{
             history_string
