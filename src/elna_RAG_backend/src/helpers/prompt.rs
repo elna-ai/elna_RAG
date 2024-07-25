@@ -6,6 +6,8 @@ use crate::helpers::out_calls::post_json;
 use std::cell::RefCell;
 use ic_cdk::api::call::RejectionCode;
 
+use super::history;
+
 
 thread_local! {
     static SUMMARY: RefCell<String> = RefCell::new(String::new());
@@ -112,7 +114,30 @@ pub async fn get_prompt(agent: Agent, limit: i32,uuid:String) -> Message {
             format!("{base_template} \n ```no content```")
         }
     };
-    let history =summarise_history(agent.history, uuid).await;
+    
+    let mut history_string = String::new();
+   
+    for history in &agent.history {
+        writeln!(
+            history_string,
+            "{:?}: {}",
+            history.role, history.content, // history.timestamp
+        )
+        .unwrap();
+    }
+
+    
+    
+
+    let history:String ={
+        if history_string.len()>500{
+        summarise_history(agent.history, uuid).await
+    }
+        else{
+            history_string
+        }
+
+    };
 
     let query_prompt = format!(
         "
