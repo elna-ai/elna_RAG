@@ -5,7 +5,6 @@ use std::fmt::Write;
 use crate::helpers::out_calls::post_json;
 use std::cell::RefCell;
 use ic_cdk::api::call::RejectionCode;
-use super::history;
 
 
 thread_local! {
