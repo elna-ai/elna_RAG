@@ -40,6 +40,6 @@ service : (Envs) -> {
   delete_collections_ : (text) -> (Result_1);
   get_file_names : (text) -> (Result_2);
   history_test : (text) -> (vec History) query;
-  summarise_history_test : (text, text) -> (text);
+  summarise_history_test : (text, text, text) -> (text);
   transform : (TransformArgs) -> (HttpResponse) query;
 }
