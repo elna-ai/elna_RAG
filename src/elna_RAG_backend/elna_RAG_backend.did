@@ -36,8 +36,10 @@ type Result_2 = variant {
 type Roles = variant { System; User; Assistant };
 type TransformArgs = record { context : vec nat8; response : HttpResponse };
 service : (Envs) -> {
-  chat : (text, text, vec float32, int32, vec History) -> (Result);
+  chat : (text, text, vec float32, text, vec History) -> (Result);
   delete_collections_ : (text) -> (Result_1);
   get_file_names : (text) -> (Result_2);
+  history_test : (text) -> (vec History) query;
+  summarise_history_test : (text, text) -> (text);
   transform : (TransformArgs) -> (HttpResponse) query;
 }
