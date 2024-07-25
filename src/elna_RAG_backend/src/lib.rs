@@ -179,15 +179,13 @@ fn history_test(agent_id:String)->Vec<History>{
 
 
 #[update]
-pub async fn summarise_history_test(agent_id:String,uuid:String)->String{
+pub async fn summarise_history_test(agent_id:String,history_string:String,uuid:String,)->String{
     let caller = ic_cdk::api::caller();
     let agent_history=History::read_history(caller.to_string(),agent_id.clone());
-    let hist=summarise_history(agent_history,uuid).await;
+    let hist=summarise_history(agent_history,uuid,history_string).await;
     hist
 
 }
-
-
 
 
 export_candid!();
