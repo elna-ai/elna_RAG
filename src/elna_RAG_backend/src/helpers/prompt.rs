@@ -13,7 +13,7 @@ thread_local! {
 
 pub async fn summarise_history(history_entries:Vec<History>,uuid:String ) -> String {
 
-    if history_entries.is_empty() {
+    if history_entries.len()==1 {
         return String::from("");
     }
     
@@ -34,14 +34,16 @@ pub async fn summarise_history(history_entries:Vec<History>,uuid:String ) -> Str
             }
         } else {
             history_string = summary.clone();
-            if let Some(last_history) = history_entries.last() {
+            let last_two_entries= &history_entries[history_entries.len()-2..];
+            for entry in last_two_entries {
                 writeln!(
                     history_string,
                     "{:?}: {}",
-                    last_history.role, last_history.content, // last_history.timestamp
+                    entry.role, entry.content, // entry.timestamp
                 )
                 .unwrap();
             }
+
         }
     });
     
