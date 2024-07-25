@@ -10,7 +10,7 @@ mod helpers;
 use helpers::history::{Roles,History};
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::out_calls::{post_json, transform_impl};
-use helpers::prompt::get_prompt;
+use helpers::prompt::{get_prompt,summarise_history};
 use ic_cdk::{export_candid, post_upgrade, query, update};
 
 thread_local! {
@@ -52,7 +52,6 @@ pub fn get_envs() -> Envs {
     })
 }
 
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Agent {
     query_text: String,
     biography: String,
@@ -93,18 +92,12 @@ pub enum  MyOption<T>{
     None
 }
 
-
-
-
-
-
-
 #[update]
 async fn chat(
     agent_id: String,
     query_text: String,
     query_vector: Vec<f32>,
-    uuid: i32, history:Vec<History>) -> Result<Response, Error> {
+    uuid: String, history:Vec<History>) -> Result<Response, Error> {
     let wizard_details = match get_agent_details(agent_id.clone()).await {
         // TODO: change error type
         None => return Err(Error::BodyNonSerializable),
@@ -113,6 +106,7 @@ async fn chat(
     };
 
     let agent_history: Vec<History> = if history.is_empty() {
+        History::record_history(Roles::Assistant, query_text.clone(), agent_id.clone());
         let caller = ic_cdk::api::caller();
         History::read_history(caller.to_string(), agent_id.clone())
     } else {
@@ -123,12 +117,13 @@ async fn chat(
         query_text: query_text,
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
+   
         query_vector: query_vector,
         index_name: agent_id.clone(),
         history:agent_history
     };
 
-    let hist_uid=uuid.clone()+100;
+    let hist_uid=uuid.clone()+"100";
 
     let message = get_prompt(agent, 2,hist_uid.to_string()).await;
 
@@ -175,7 +170,22 @@ fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
 }
 
+#[query]
+fn history_test(agent_id:String)->Vec<History>{
+    let caller = ic_cdk::api::caller();
+    ic_cdk::println!("{:?}",caller);
+    History::read_history(caller.to_string(),agent_id.clone())    
+}
 
+
+#[update]
+pub async fn summarise_history_test(agent_id:String,uuid:String)->String{
+    let caller = ic_cdk::api::caller();
+    let agent_history=History::read_history(caller.to_string(),agent_id.clone());
+    let hist=summarise_history(agent_history,uuid).await;
+    hist
+
+}
 
 
 
