@@ -104,11 +104,13 @@ async fn chat(
         // return Err("wizard details not found"),
         Some(value) => value,
     };
+    
+    let caller = ic_cdk::api::caller().to_string();
 
     let agent_history: Vec<History> = if history.is_empty() {
-        History::record_history(Roles::User, query_text.clone(), agent_id.clone());
-        let caller = ic_cdk::api::caller();
-        History::read_history(caller.to_string(), agent_id.clone())
+        History::record_history(Roles::User, query_text.clone(), agent_id.clone(),&caller);
+        
+        History::read_history(&caller, agent_id.clone())
     } else {
         history.clone()
     };
@@ -123,7 +125,7 @@ async fn chat(
         history:agent_history
     };
 
-    let hist_uid=uuid.clone()+"100";
+    let hist_uid=uuid.clone()+"_history";
 
     let message = get_prompt(agent, 2,hist_uid.to_string()).await;
 
@@ -140,7 +142,7 @@ async fn chat(
         Ok(data) => {
             // Record history if it was None initially
             if history.is_empty() {
-                History::record_history(Roles::Assistant, data.body.response.clone(), agent_id.clone());
+                History::record_history(Roles::Assistant, data.body.response.clone(), agent_id.clone(),&caller);
             }
             Ok(data)
         }
@@ -172,16 +174,16 @@ fn transform(raw: TransformArgs) -> HttpResponse {
 
 #[query]
 fn history_test(agent_id:String)->Vec<History>{
-    let caller = ic_cdk::api::caller();
+    let caller = ic_cdk::api::caller().to_string();
     ic_cdk::println!("{:?}",caller);
-    History::read_history(caller.to_string(),agent_id.clone())    
+    History::read_history(&caller,agent_id.clone())    
 }
 
 
 #[update]
 pub async fn summarise_history_test(agent_id:String,history_string:String,uuid:String,)->String{
-    let caller = ic_cdk::api::caller();
-    let agent_history=History::read_history(caller.to_string(),agent_id.clone());
+    let caller = ic_cdk::api::caller().to_string();
+    let agent_history=History::read_history(&caller,agent_id.clone());
     let hist=summarise_history(agent_history,uuid,history_string).await;
     hist
 

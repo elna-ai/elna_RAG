@@ -25,7 +25,7 @@ pub struct History {
 }
 
 impl History {
-    pub fn record_history(role: Roles, content: String, agent_id: String) {
+    pub fn record_history(role: Roles, content: String, agent_id: String,caller:&String) {
         // let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
         // let time=now.format(&Rfc3339).unwrap();
         let history_entry = History {
@@ -33,11 +33,11 @@ impl History {
             content,
             // timestamp: time,
         };
-        let caller = ic_cdk::api::caller();
+        
 
         HISTORY_MAP.with(|map| {
             let mut map = map.borrow_mut();
-            map.entry(caller.clone().to_string())
+            map.entry(caller.clone())
                 .or_insert_with(HashMap::new)
                 .entry(agent_id.clone())
                 .or_insert_with(Vec::new)
@@ -45,10 +45,10 @@ impl History {
         });
     }
 
-    pub fn read_history(caller_id: String, agent_id: String) -> Vec<History> {
+    pub fn read_history(caller_id: &String, agent_id: String) -> Vec<History> {
         HISTORY_MAP.with(|map| {
             map.borrow()
-                .get(&caller_id)
+                .get(caller_id)
                 .and_then(|agent_map| agent_map.get(&agent_id))
                 .cloned()
                 .unwrap_or_else(Vec::new)
