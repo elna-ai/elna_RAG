@@ -51,7 +51,7 @@ pub fn get_envs() -> Envs {
         }
     })
 }
-
+#[derive(Debug, Serialize, Deserialize,Clone)]
 pub struct Agent {
     query_text: String,
     biography: String,
@@ -86,11 +86,7 @@ pub enum Error {
     HttpError(String),
     BodyNonSerializable,
 }
-#[derive(CandidType, Debug,Clone)]
-pub enum  MyOption<T>{
-    Some(Vec<T>),
-    None
-}
+
 
 #[update]
 async fn chat(
