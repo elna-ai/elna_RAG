@@ -104,7 +104,7 @@ async fn chat(
     let caller = ic_cdk::api::caller().to_string();
 
     let agent_history: Vec<History> = if history.is_empty() {
-        History::record_history(Roles::User, query_text.clone(), agent_id.clone(), &caller);
+        
 
         History::read_history(&caller, agent_id.clone())
     } else {
@@ -113,7 +113,7 @@ async fn chat(
     ic_cdk::println!("Agent history: {:?}", agent_history);
 
     let agent = Agent {
-        query_text: query_text,
+        query_text: query_text.clone(),
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
 
@@ -139,6 +139,7 @@ async fn chat(
         Ok(data) => {
             // Record history if it was None initially
             if history.is_empty() {
+                History::record_history(Roles::User, query_text, agent_id.clone(), &caller);
                 History::record_history(
                     Roles::Assistant,
                     data.body.response.clone(),

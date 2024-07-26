@@ -87,7 +87,9 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
         }
     };
 
-    let mut history_string = String::new();
+    let mut history_string = String::from("");
+
+    if !agent.history.is_empty(){
 
     for history in &agent.history {
         writeln!(
@@ -98,7 +100,8 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
         )
         .unwrap();
     }
-
+    
+    }
     let history: String = {
         if history_string.len() > 500 {
             summarise_history(agent.history, uuid, history_string).await
