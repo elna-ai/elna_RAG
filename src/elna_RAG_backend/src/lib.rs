@@ -106,7 +106,7 @@ async fn chat(
     };
 
     let agent_history: Vec<History> = if history.is_empty() {
-        History::record_history(Roles::Assistant, query_text.clone(), agent_id.clone());
+        History::record_history(Roles::User, query_text.clone(), agent_id.clone());
         let caller = ic_cdk::api::caller();
         History::read_history(caller.to_string(), agent_id.clone())
     } else {
