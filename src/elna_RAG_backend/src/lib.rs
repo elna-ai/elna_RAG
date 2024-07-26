@@ -139,7 +139,18 @@ async fn chat(
         Ok(data) => {
             // Record history if it was None initially
             if history.is_empty() {
-                History::record_history(Roles::User, query_text,Roles::Assistant,data.body.response.clone(), agent_id.clone(), &caller);
+                let history_entry1 = History {
+                    role: Roles::User,
+                    content: query_text,
+                    // timestamp: time.clone(),
+                };
+                let history_entry2 = History {
+                    role: Roles::Assistant,
+                    content: data.body.response.clone(),
+                    // timestamp: time,
+                };
+                let history_entries=(history_entry1,history_entry2);
+                History::record_history(history_entries, agent_id.clone(), &caller);
 
             }
             Ok(data)
