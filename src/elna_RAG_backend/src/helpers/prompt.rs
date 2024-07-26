@@ -11,29 +11,39 @@ thread_local! {
 }
 
 pub async fn summarise_history(
-    history_entries: Vec<History>,
+    history_entries: Vec<(History,History)>,
     uuid: String,
     mut history_string: String,
 ) -> String {
+    
     SUMMARY.with(|summary| {
         let summary = summary.borrow();
+
         if !summary.is_empty() {
             history_string = summary.clone();
-            let last_two_entries = &history_entries[history_entries.len() - 2..];
-            for entry in last_two_entries {
-                writeln!(
-                    history_string,
-                    "{:?}: {}",
-                    entry.role,
-                    entry.content, // entry.timestamp
-                )
-                .unwrap();
-            }
+
+            let (history1, history2) = &history_entries[history_entries.len()-1];
+
+            writeln!(
+                history_string,
+                "{:?}: {}",
+                history1.role,
+                history1.content, // history1.timestamp
+            )
+            .unwrap();
+            writeln!(
+                history_string,
+                "{:?}: {}",
+                history2.role,
+                history2.content, // history2.timestamp
+            )
+            .unwrap();
         }
+        
     });
 
     let history_prompt =
-        String::from("Summarise the following conversation without missing any important details");
+        String::from("Summarise the following conversation without missing any important details, in less than 5 sentences");
 
     let message = Message {
         system_message: history_prompt,
@@ -91,15 +101,23 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
 
     if !agent.history.is_empty(){
 
-    for history in &agent.history {
-        writeln!(
-            history_string,
-            "{:?}: {}",
-            history.role,
-            history.content, // history.timestamp
-        )
-        .unwrap();
-    }
+        for history_tuple in &agent.history {
+            let (history1, history2) = history_tuple;
+            writeln!(
+                history_string,
+                "{:?}: {}",
+                history1.role,
+                history1.content, // history1.timestamp
+            )
+            .unwrap();
+            writeln!(
+                history_string,
+                "{:?}: {}",
+                history2.role,
+                history2.content, // history2.timestamp
+            )
+            .unwrap();
+        }
     
     }
     let history: String = {
