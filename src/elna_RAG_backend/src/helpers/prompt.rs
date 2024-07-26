@@ -1,49 +1,47 @@
 use crate::helpers::canister_calls::db_query;
-use crate::{Agent,Message,Response,Error,get_envs};
 use crate::helpers::history::History;
-use std::fmt::Write;
 use crate::helpers::out_calls::post_json;
-use std::cell::RefCell;
+use crate::{get_envs, Agent, Error, Message, Response};
 use ic_cdk::api::call::RejectionCode;
-
+use std::cell::RefCell;
+use std::fmt::Write;
 
 thread_local! {
     static SUMMARY: RefCell<String> = RefCell::new(String::new());
 }
 
-pub async fn summarise_history(history_entries:Vec<History>,uuid:String,mut history_string:String ) -> String {
-
-
-
+pub async fn summarise_history(
+    history_entries: Vec<History>,
+    uuid: String,
+    mut history_string: String,
+) -> String {
     SUMMARY.with(|summary| {
         let summary = summary.borrow();
         if !summary.is_empty() {
             history_string = summary.clone();
-            let last_two_entries= &history_entries[history_entries.len()-2..];
+            let last_two_entries = &history_entries[history_entries.len() - 2..];
             for entry in last_two_entries {
                 writeln!(
                     history_string,
                     "{:?}: {}",
-                    entry.role, entry.content, // entry.timestamp
+                    entry.role,
+                    entry.content, // entry.timestamp
                 )
                 .unwrap();
             }
         }
-
-        
     });
-    
-    let history_prompt = String::from("Summarise the following conversation without missing any important details");
 
-    let message = Message{
-        system_message:history_prompt,
-        user_message: history_string 
+    let history_prompt =
+        String::from("Summarise the following conversation without missing any important details");
+
+    let message = Message {
+        system_message: history_prompt,
+        user_message: history_string,
     };
-    
-    
-    
+
     let external_url = get_envs().external_service_url;
-    
+
     let response: Result<Response, Error> = post_json::<Message, Response>(
         format!("{}/canister-chat", external_url).as_str(),
         message,
@@ -51,7 +49,7 @@ pub async fn summarise_history(history_entries:Vec<History>,uuid:String,mut hist
         None,
     )
     .await;
-    
+
     match response {
         Ok(data) => {
             let new_summary = data.body.response;
@@ -59,26 +57,16 @@ pub async fn summarise_history(history_entries:Vec<History>,uuid:String,mut hist
                 *summary.borrow_mut() = new_summary.clone();
             });
             new_summary
-        
-        },
-    
+        }
+
         Err(e) => {
             // Handle the error properly
-            format!(
-                ""      
-            )
-    
-        },
-    
-    
+            format!("")
+        }
     }
-
 }
 
-
-
-
-pub async fn get_prompt(agent: Agent, limit: i32,uuid:String) -> Message {
+pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
     let base_template= format!("You are an AI chatbot equipped with the biography of \"{}\".
     Please tell the user about your function and capabilities, when they ask you about yourself.
     You always provide useful information corresponding to the context of the user's question, pulling information from the trained data of your LLM, your biography and the uploaded content delimited by triple backticks.
@@ -98,29 +86,25 @@ pub async fn get_prompt(agent: Agent, limit: i32,uuid:String) -> Message {
             format!("{base_template} \n ```no content```")
         }
     };
-    
+
     let mut history_string = String::new();
-   
+
     for history in &agent.history {
         writeln!(
             history_string,
             "{:?}: {}",
-            history.role, history.content, // history.timestamp
+            history.role,
+            history.content, // history.timestamp
         )
         .unwrap();
     }
 
-    
-    
-
-    let history:String ={
-        if history_string.len()>500{
-        summarise_history(agent.history, uuid,history_string).await
-    }
-        else{
+    let history: String = {
+        if history_string.len() > 500 {
+            summarise_history(agent.history, uuid, history_string).await
+        } else {
             history_string
         }
-
     };
 
     let query_prompt = format!(
@@ -131,8 +115,7 @@ pub async fn get_prompt(agent: Agent, limit: i32,uuid:String) -> Message {
 
         Question: {}
         Helpful Answer: ",
-        history,
-        agent.query_text
+        history, agent.query_text
     );
 
     let message = Message {
@@ -140,6 +123,7 @@ pub async fn get_prompt(agent: Agent, limit: i32,uuid:String) -> Message {
         user_message: query_prompt,
     };
 
-    message
+    ic_cdk::println!("Final Prompt: {:?}", message);
 
+    message
 }

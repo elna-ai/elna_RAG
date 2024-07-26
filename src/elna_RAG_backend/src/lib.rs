@@ -7,17 +7,16 @@ use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
-use helpers::history::{Roles,History};
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
+use helpers::history::{History, Roles};
 use helpers::out_calls::{post_json, transform_impl};
-use helpers::prompt::{get_prompt,summarise_history};
+use helpers::prompt::{get_prompt, summarise_history};
 use ic_cdk::{export_candid, post_upgrade, query, update};
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
 
 }
-
 
 #[derive(Deserialize, CandidType, Debug, Default)]
 pub struct Envs {
@@ -51,7 +50,7 @@ pub fn get_envs() -> Envs {
         }
     })
 }
-#[derive(Debug, Serialize, Deserialize,Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Agent {
     query_text: String,
     biography: String,
@@ -87,43 +86,45 @@ pub enum Error {
     BodyNonSerializable,
 }
 
-
 #[update]
 async fn chat(
     agent_id: String,
     query_text: String,
     query_vector: Vec<f32>,
-    uuid: String, history:Vec<History>) -> Result<Response, Error> {
+    uuid: String,
+    history: Vec<History>,
+) -> Result<Response, Error> {
     let wizard_details = match get_agent_details(agent_id.clone()).await {
         // TODO: change error type
         None => return Err(Error::BodyNonSerializable),
         // return Err("wizard details not found"),
         Some(value) => value,
     };
-    
+
     let caller = ic_cdk::api::caller().to_string();
 
     let agent_history: Vec<History> = if history.is_empty() {
-        History::record_history(Roles::User, query_text.clone(), agent_id.clone(),&caller);
-        
+        History::record_history(Roles::User, query_text.clone(), agent_id.clone(), &caller);
+
         History::read_history(&caller, agent_id.clone())
     } else {
         history.clone()
     };
+    ic_cdk::println!("Agent history: {:?}", agent_history);
 
     let agent = Agent {
         query_text: query_text,
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
-   
+
         query_vector: query_vector,
         index_name: agent_id.clone(),
-        history:agent_history
+        history: agent_history,
     };
 
-    let hist_uid=uuid.clone()+"_history";
+    let hist_uid = uuid.clone() + "_history";
 
-    let message = get_prompt(agent, 2,hist_uid.to_string()).await;
+    let message = get_prompt(agent, 2, hist_uid.to_string()).await;
 
     let external_url = get_envs().external_service_url;
 
@@ -138,16 +139,18 @@ async fn chat(
         Ok(data) => {
             // Record history if it was None initially
             if history.is_empty() {
-                History::record_history(Roles::Assistant, data.body.response.clone(), agent_id.clone(),&caller);
+                History::record_history(
+                    Roles::Assistant,
+                    data.body.response.clone(),
+                    agent_id.clone(),
+                    &caller,
+                );
             }
             Ok(data)
         }
         Err(e) => Err(e),
     }
-
 }
-    
-    
 
 #[update]
 async fn get_file_names(
@@ -169,21 +172,22 @@ fn transform(raw: TransformArgs) -> HttpResponse {
 }
 
 #[query]
-fn history_test(agent_id:String)->Vec<History>{
+fn history_test(agent_id: String) -> Vec<History> {
     let caller = ic_cdk::api::caller().to_string();
-    ic_cdk::println!("{:?}",caller);
-    History::read_history(&caller,agent_id.clone())    
+    ic_cdk::println!("{:?}", caller);
+    History::read_history(&caller, agent_id.clone())
 }
-
 
 #[update]
-pub async fn summarise_history_test(agent_id:String,history_string:String,uuid:String,)->String{
+pub async fn summarise_history_test(
+    agent_id: String,
+    history_string: String,
+    uuid: String,
+) -> String {
     let caller = ic_cdk::api::caller().to_string();
-    let agent_history=History::read_history(&caller,agent_id.clone());
-    let hist=summarise_history(agent_history,uuid,history_string).await;
+    let agent_history = History::read_history(&caller, agent_id.clone());
+    let hist = summarise_history(agent_history, uuid, history_string).await;
     hist
-
 }
-
 
 export_candid!();
