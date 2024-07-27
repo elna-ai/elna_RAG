@@ -1,7 +1,7 @@
 #!/bin/bash
 
 base_dir=$(readlink -f $(dirname $0))
-image_name="ghcr.io/elna-ai/sdk:v0.0.8"
+image_name="ghcr.io/elna-ai/sdk:latest"
 fail() {
     echo "##### FAIL: $1"
     exit 1
