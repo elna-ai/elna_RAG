@@ -11,6 +11,8 @@ use std::{borrow::Cow, cell::RefCell};
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 
 const MAX_VALUE_SIZE: u32 = 100;
+const MAX_LARGE_SIZE: u32 = 10_485_760;
+
 
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =
@@ -85,7 +87,7 @@ impl Storable for Content {
 }
 
 impl BoundedStorable for Content {
-    const MAX_SIZE: u32=500;
+    const MAX_SIZE: u32=MAX_LARGE_SIZE;
 
     const IS_FIXED_SIZE: bool=false;
 }
@@ -117,7 +119,7 @@ impl Storable for History {
 
 }
 impl BoundedStorable for History {
-    const MAX_SIZE: u32=10000;
+    const MAX_SIZE: u32=MAX_LARGE_SIZE;
 
     const IS_FIXED_SIZE: bool=false;
 }
@@ -143,7 +145,7 @@ impl Storable for AgentContentMap {
 }
 
 impl BoundedStorable for AgentContentMap {
-    const MAX_SIZE: u32 = 10000;
+    const MAX_SIZE: u32 = MAX_LARGE_SIZE;
     const IS_FIXED_SIZE: bool = false;
 }
 
