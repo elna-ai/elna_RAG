@@ -1,6 +1,5 @@
 use candid::CandidType;
 mod types;
-
 use ic_cdk::api::call::RejectionCode;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
@@ -9,13 +8,16 @@ use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
+use helpers::history::{History, Roles};
 use helpers::out_calls::{post_json, transform_impl};
-use helpers::prompt::get_prompt;
+use helpers::prompt::{get_prompt, summarise_history};
 use ic_cdk::{export_candid, post_upgrade, query, update};
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
+
 }
+
 #[derive(Deserialize, CandidType, Debug, Default)]
 pub struct Envs {
     wizard_details_canister_id: String,
@@ -48,22 +50,14 @@ pub fn get_envs() -> Envs {
         }
     })
 }
-
-// TODO: make sure role can only be "user" or "assistant"?
-#[derive(Debug, Serialize, Deserialize, CandidType)]
-struct History {
-    role: String,
-    content: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Agent {
     query_text: String,
     biography: String,
     greeting: String,
     query_vector: Vec<f32>,
     index_name: String,
-    // history: Vec<History>,
+    history: Vec<(History,History)>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -73,7 +67,7 @@ pub struct Message {
 }
 
 #[derive(Deserialize, CandidType, Debug)]
-struct Body {
+pub struct Body {
     response: String,
 }
 
@@ -97,9 +91,9 @@ async fn chat(
     agent_id: String,
     query_text: String,
     query_vector: Vec<f32>,
-    uuid: String, // history: Vec<History>,
+    uuid: String,
+    history: Vec<(History,History)>,
 ) -> Result<Response, Error> {
-    // TODO: call vector db
     let wizard_details = match get_agent_details(agent_id.clone()).await {
         // TODO: change error type
         None => return Err(Error::BodyNonSerializable),
@@ -107,27 +101,60 @@ async fn chat(
         Some(value) => value,
     };
 
+    let caller = ic_cdk::api::caller().to_string();
+
+    let agent_history: Vec<(History,History)> = if history.is_empty() {
+        
+
+        History::read_history(&caller, agent_id.clone())
+    } else {
+        history.clone()
+    };
+    ic_cdk::println!("Agent history: {:?}", agent_history);
+
     let agent = Agent {
-        query_text: query_text,
+        query_text: query_text.clone(),
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
+
         query_vector: query_vector,
-        index_name: agent_id,
-        //TODO: add history,
+        index_name: agent_id.clone(),
+        history: agent_history,
     };
 
-    let message = get_prompt(agent, 2).await;
+    let hist_uid = uuid.clone() + "_history";
+
+    let message = get_prompt(agent, 2, hist_uid.to_string()).await;
 
     let external_url = get_envs().external_service_url;
+
     let response: Result<Response, Error> = post_json::<Message, Response>(
         format!("{}/canister-chat", external_url).as_str(),
         message,
-        uuid,
+        uuid.to_string().clone(),
         None,
     )
     .await;
     match response {
-        Ok(data) => Ok(data),
+        Ok(data) => {
+            // Record history if it was None initially
+            if history.is_empty() {
+                let history_entry1 = History {
+                    role: Roles::User,
+                    content: query_text,
+                    // timestamp: time.clone(),
+                };
+                let history_entry2 = History {
+                    role: Roles::Assistant,
+                    content: data.body.response.clone(),
+                    // timestamp: time,
+                };
+                let history_entries=(history_entry1,history_entry2);
+                History::record_history(history_entries, agent_id.clone(), &caller);
+
+            }
+            Ok(data)
+        }
         Err(e) => Err(e),
     }
 }
@@ -149,6 +176,25 @@ async fn delete_collections_(index_name: String) -> Result<String, (RejectionCod
 #[query]
 fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
+}
+
+#[query]
+fn history_test(agent_id: String) -> Vec<(History,History)> {
+    let caller = ic_cdk::api::caller().to_string();
+    ic_cdk::println!("{:?}", caller);
+    History::read_history(&caller, agent_id.clone())
+}
+
+#[update]
+pub async fn summarise_history_test(
+    agent_id: String,
+    history_string: String,
+    uuid: String,
+) -> String {
+    let caller = ic_cdk::api::caller().to_string();
+    let agent_history = History::read_history(&caller, agent_id.clone());
+    let hist = summarise_history(agent_history, uuid, history_string).await;
+    hist
 }
 
 export_candid!();

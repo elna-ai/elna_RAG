@@ -10,6 +10,7 @@ type Error = variant {
   ParseError;
   HttpError : text;
 };
+type History = record { content : text; role : Roles };
 type HttpHeader = record { value : text; name : text };
 type HttpResponse = record {
   status : nat;
@@ -32,10 +33,15 @@ type Result_2 = variant {
   Ok : vec text;
   Err : record { RejectionCode; text; text };
 };
+type Roles = variant { System; User; Assistant };
 type TransformArgs = record { context : vec nat8; response : HttpResponse };
 service : (Envs) -> {
-  chat : (text, text, vec float32, text) -> (Result);
+  chat : (text, text, vec float32, text, vec record { History; History }) -> (
+      Result,
+    );
   delete_collections_ : (text) -> (Result_1);
   get_file_names : (text) -> (Result_2);
+  history_test : (text) -> (vec record { History; History }) query;
+  summarise_history_test : (text, text, text) -> (text);
   transform : (TransformArgs) -> (HttpResponse) query;
 }
