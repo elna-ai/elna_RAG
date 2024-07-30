@@ -1,9 +1,9 @@
-use serde::{Serialize};
+use serde::Serialize;
 // use time::OffsetDateTime;
 // use time::format_description::well_known::Rfc3339;
 use candid::{CandidType, Decode, Deserialize, Encode};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
-use ic_stable_structures::{storable,BoundedStorable,
+use ic_stable_structures::{BoundedStorable,
      DefaultMemoryImpl, StableBTreeMap, Storable,
 };
 use std::{borrow::Cow, cell::RefCell};
@@ -12,8 +12,16 @@ type Memory = VirtualMemory<DefaultMemoryImpl>;
 
 const MAX_VALUE_SIZE: u32 = 100;
 
+thread_local! {
+    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =
+        RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
 
-
+    static MAP: RefCell<StableBTreeMap<Caller_id, AgentContentMap, Memory>> = RefCell::new(
+        StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0))),
+        )
+    );
+}
 
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone,Debug, Serialize, Deserialize, CandidType)]
@@ -135,25 +143,10 @@ impl Storable for AgentContentMap {
 }
 
 impl BoundedStorable for AgentContentMap {
-    const MAX_SIZE: u32 = MAX_VALUE_SIZE;
+    const MAX_SIZE: u32 = 10000;
     const IS_FIXED_SIZE: bool = false;
 }
 
-
-thread_local! {
-    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =
-        RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
-
-    static MAP: RefCell<StableBTreeMap<Caller_id, AgentContentMap, Memory>> = RefCell::new(
-        StableBTreeMap::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0))),
-        )
-    );
-}
-
-// thread_local! {
-//     static HISTORY_MAP: RefCell<HashMap<String, HashMap<String, Vec<(History, History)>>>> = RefCell::new(HashMap::new());
-// }
 impl History {
     pub fn record_history(history_entry: (History, History), agent_id: String, caller: &String) {
         let caller_id = Caller_id(caller.clone());
@@ -179,4 +172,16 @@ impl History {
         });
     }
 
+    pub fn read_history(caller_id: &String, agent_id: String) -> Vec<(History, History)> {
+        let caller_id = Caller_id(caller_id.clone());
+        let agent_id = Agent_id(agent_id);
+    
+        MAP.with(|map| {
+            let map = map.borrow();
+            map.get(&caller_id)
+                .and_then(|agent_map| agent_map.0.get(&agent_id).map(|content| content.clone()))
+                .map(|content| content.0)
+                .unwrap_or_else(Vec::new)
+        })
     }
+}
