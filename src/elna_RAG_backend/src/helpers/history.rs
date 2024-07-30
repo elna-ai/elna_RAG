@@ -154,29 +154,29 @@ thread_local! {
 // thread_local! {
 //     static HISTORY_MAP: RefCell<HashMap<String, HashMap<String, Vec<(History, History)>>>> = RefCell::new(HashMap::new());
 // }
-// impl History {
-//     pub fn record_history(history_entry:(History,History),agent_id: String, caller: &String) {
-//         // let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
-//         // let time=now.format(&Rfc3339).unwrap();
+impl History {
+    pub fn record_history(history_entry: (History, History), agent_id: String, caller: &String) {
+        let caller_id = Caller_id(caller.clone());
+        let agent_id = Agent_id(agent_id);
+    
+        MAP.with(|map| {
+            let mut map = map.borrow_mut();
+    
+            // Retrieve the existing AgentContentMap or create a new one if it doesn't exist
+            let mut agent_map = map.get(&caller_id).unwrap_or_else(|| {
+                AgentContentMap(StableBTreeMap::init(
+                    MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1))),
+                ))
+            });
+    
+            // Insert the history entry
+            let mut content = agent_map.0.get(&agent_id).unwrap_or_else(|| Content(Vec::new()));
+            content.0.push(history_entry);
+            agent_map.0.insert(agent_id, content.clone());
+    
+            // Update the map with the modified AgentContentMap
+            map.insert(caller_id, agent_map);
+        });
+    }
 
-
-//         HISTORY_MAP.with(|map| {
-//             let mut map = map.borrow_mut();
-//             map.entry(caller.clone())
-//                 .or_insert_with(HashMap::new)
-//                 .entry(agent_id.clone())
-//                 .or_insert_with(Vec::new)
-//                 .push(history_entry);
-//         });
-//     }
-
-//     pub fn read_history(caller_id: &String, agent_id: String) -> Vec<(History, History)> {
-//         HISTORY_MAP.with(|map| {
-//             map.borrow()
-//                 .get(caller_id)
-//                 .and_then(|agent_map| agent_map.get(&agent_id))
-//                 .cloned()
-//                 .unwrap_or_else(Vec::new)
-//         })
-//     }
-// }
+    }
