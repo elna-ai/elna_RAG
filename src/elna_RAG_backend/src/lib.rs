@@ -57,7 +57,7 @@ pub struct Agent {
     greeting: String,
     query_vector: Vec<f32>,
     index_name: String,
-    history: Vec<(History,History)>,
+    history: Vec<(History, History)>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -92,7 +92,7 @@ async fn chat(
     query_text: String,
     query_vector: Vec<f32>,
     uuid: String,
-    history: Vec<(History,History)>,
+    history: Vec<(History, History)>,
 ) -> Result<Response, Error> {
     let wizard_details = match get_agent_details(agent_id.clone()).await {
         // TODO: change error type
@@ -103,9 +103,7 @@ async fn chat(
 
     let caller = ic_cdk::api::caller().to_string();
 
-    let agent_history: Vec<(History,History)> = if history.is_empty() {
-        
-
+    let agent_history: Vec<(History, History)> = if history.is_empty() {
         History::read_history(&caller, agent_id.clone())
     } else {
         history.clone()
@@ -149,9 +147,8 @@ async fn chat(
                     content: data.body.response.clone(),
                     // timestamp: time,
                 };
-                let history_entries=(history_entry1,history_entry2);
+                let history_entries = (history_entry1, history_entry2);
                 History::record_history(history_entries, agent_id.clone(), &caller);
-
             }
             Ok(data)
         }
@@ -179,7 +176,7 @@ fn transform(raw: TransformArgs) -> HttpResponse {
 }
 
 #[query]
-fn history_test(agent_id: String) -> Vec<(History,History)> {
+fn history_test(agent_id: String) -> Vec<(History, History)> {
     let caller = ic_cdk::api::caller().to_string();
     ic_cdk::println!("{:?}", caller);
     History::read_history(&caller, agent_id.clone())
