@@ -175,23 +175,4 @@ fn transform(raw: TransformArgs) -> HttpResponse {
     transform_impl(raw)
 }
 
-#[query]
-fn history_test(agent_id: String) -> Vec<(History, History)> {
-    let caller = ic_cdk::api::caller().to_string();
-    ic_cdk::println!("{:?}", caller);
-    History::read_history(&caller, agent_id.clone())
-}
-
-#[update]
-pub async fn summarise_history_test(
-    agent_id: String,
-    history_string: String,
-    uuid: String,
-) -> String {
-    let caller = ic_cdk::api::caller().to_string();
-    let agent_history = History::read_history(&caller, agent_id.clone());
-    let hist = summarise_history(agent_history, uuid, history_string).await;
-    hist
-}
-
 export_candid!();
