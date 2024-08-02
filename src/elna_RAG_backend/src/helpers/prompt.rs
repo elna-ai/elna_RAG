@@ -11,18 +11,17 @@ thread_local! {
 }
 
 pub async fn summarise_history(
-    history_entries: Vec<(History,History)>,
+    history_entries: Vec<(History, History)>,
     uuid: String,
     mut history_string: String,
 ) -> String {
-    
     SUMMARY.with(|summary| {
         let summary = summary.borrow();
 
         if !summary.is_empty() {
             history_string = summary.clone();
 
-            let (history1, history2) = &history_entries[history_entries.len()-1];
+            let (history1, history2) = &history_entries[history_entries.len() - 1];
 
             writeln!(
                 history_string,
@@ -39,7 +38,6 @@ pub async fn summarise_history(
             )
             .unwrap();
         }
-        
     });
 
     let history_prompt =
@@ -99,8 +97,7 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
 
     let mut history_string = String::from("");
 
-    if !agent.history.is_empty(){
-
+    if !agent.history.is_empty() {
         for history_tuple in &agent.history {
             let (history1, history2) = history_tuple;
             writeln!(
@@ -118,7 +115,6 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
             )
             .unwrap();
         }
-    
     }
     let history: String = {
         if history_string.len() > 500 {

@@ -18,5 +18,7 @@ serde = "1.0.197"
 serde_json = "1.0.120"
 url = "2.5.0"
 time = { version = "0.3", features = ["formatting", "local-offset"] }
+ic-stable-structures = "0.5.6"
+
 
 
