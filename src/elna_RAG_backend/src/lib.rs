@@ -23,13 +23,13 @@ pub fn fromat_time() -> String {
         + Duration::nanoseconds(nanos_remainder as i64);
 
     format!(
-        "{:04}_{:02}_{:02}_{:02}_{:02}_{:02}",
-        time.year(),
-        time.month() as u32,
-        time.day(),
+        "{:02}:{:02}:{:02} on {:02}/{:02}/{:04}",
         time.hour(),
         time.minute(),
-        time.second()
+        time.second(),
+        time.day(),
+        time.month() as u32,
+        time.year(),
     )
 }
 
