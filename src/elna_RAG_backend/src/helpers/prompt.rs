@@ -6,6 +6,7 @@ use ic_cdk::api::call::RejectionCode;
 use std::cell::RefCell;
 use std::fmt::Write;
 
+const MAX_CONTEXT_LENGTH: usize = 1000;
 thread_local! {
     static SUMMARY: RefCell<String> = RefCell::new(String::new());
 }
@@ -23,20 +24,8 @@ pub async fn summarise_history(
 
             let (history1, history2) = &history_entries[history_entries.len() - 1];
 
-            writeln!(
-                history_string,
-                "{:?}: {}",
-                history1.role,
-                history1.content, // history1.timestamp
-            )
-            .unwrap();
-            writeln!(
-                history_string,
-                "{:?}: {}",
-                history2.role,
-                history2.content, // history2.timestamp
-            )
-            .unwrap();
+            writeln!(history_string, "{:?}: {}", history1.role, history1.content,).unwrap();
+            writeln!(history_string, "{:?}: {}", history2.role, history2.content,).unwrap();
         }
     });
 
@@ -67,8 +56,7 @@ pub async fn summarise_history(
             new_summary
         }
 
-        Err(e) => {
-            // Handle the error properly
+        Err(_e) => {
             format!("")
         }
     }
@@ -100,24 +88,12 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
     if !agent.history.is_empty() {
         for history_tuple in &agent.history {
             let (history1, history2) = history_tuple;
-            writeln!(
-                history_string,
-                "{:?}: {}",
-                history1.role,
-                history1.content, // history1.timestamp
-            )
-            .unwrap();
-            writeln!(
-                history_string,
-                "{:?}: {}",
-                history2.role,
-                history2.content, // history2.timestamp
-            )
-            .unwrap();
+            writeln!(history_string, "{:?}: {}", history1.role, history1.content,).unwrap();
+            writeln!(history_string, "{:?}: {}", history2.role, history2.content,).unwrap();
         }
     }
     let history: String = {
-        if history_string.len() > 500 {
+        if history_string.len() > MAX_CONTEXT_LENGTH {
             summarise_history(agent.history, uuid, history_string).await
         } else {
             history_string

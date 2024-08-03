@@ -10,7 +10,7 @@ type Error = variant {
   ParseError;
   HttpError : text;
 };
-type History = record { content : text; role : Roles };
+type History = record { content : text; role : Roles; timestamp : text };
 type HttpHeader = record { value : text; name : text };
 type HttpResponse = record {
   status : nat;

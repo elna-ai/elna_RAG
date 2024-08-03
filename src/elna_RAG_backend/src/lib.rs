@@ -10,8 +10,28 @@ mod helpers;
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::history::{History, Roles};
 use helpers::out_calls::{post_json, transform_impl};
-use helpers::prompt::{get_prompt, summarise_history};
+use helpers::prompt::get_prompt;
 use ic_cdk::{export_candid, post_upgrade, query, update};
+use time::{Duration, OffsetDateTime};
+
+pub fn fromat_time() -> String {
+    let timestamp_ns = ic_cdk::api::time();
+    let timestamp_s = timestamp_ns / 1_000_000_000; // convert to seconds
+    let nanos_remainder = timestamp_ns % 1_000_000_000; // get remaining nanoseconds
+
+    let time = OffsetDateTime::from_unix_timestamp(timestamp_s as i64).unwrap()
+        + Duration::nanoseconds(nanos_remainder as i64);
+
+    format!(
+        "{:04}_{:02}_{:02}_{:02}_{:02}_{:02}",
+        time.year(),
+        time.month() as u32,
+        time.day(),
+        time.hour(),
+        time.minute(),
+        time.second()
+    )
+}
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
@@ -137,15 +157,16 @@ async fn chat(
         Ok(data) => {
             // Record history if it was None initially
             if history.is_empty() {
+                let time = fromat_time();
                 let history_entry1 = History {
                     role: Roles::User,
                     content: query_text,
-                    // timestamp: time.clone(),
+                    timestamp: time.clone(),
                 };
                 let history_entry2 = History {
                     role: Roles::Assistant,
                     content: data.body.response.clone(),
-                    // timestamp: time,
+                    timestamp: time,
                 };
                 let history_entries = (history_entry1, history_entry2);
                 History::record_history(history_entries, agent_id.clone(), &caller);

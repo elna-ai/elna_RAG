@@ -1,9 +1,7 @@
-use serde::Serialize;
-// use time::OffsetDateTime;
-// use time::format_description::well_known::Rfc3339;
 use candid::{CandidType, Decode, Deserialize, Encode};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap, Storable};
+use serde::Serialize;
 use std::{borrow::Cow, cell::RefCell};
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
@@ -15,7 +13,7 @@ thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =
         RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
 
-    static MAP: RefCell<StableBTreeMap<Caller_id, AgentContentMap, Memory>> = RefCell::new(
+    static MAP: RefCell<StableBTreeMap<CallerId, AgentContentMap, Memory>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0))),
         )
@@ -23,9 +21,9 @@ thread_local! {
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize, CandidType)]
-struct Caller_id(String);
+struct CallerId(String);
 
-impl Storable for Caller_id {
+impl Storable for CallerId {
     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
         // String already implements `Storable`.
         self.0.to_bytes()
@@ -36,16 +34,16 @@ impl Storable for Caller_id {
     }
 }
 
-impl BoundedStorable for Caller_id {
+impl BoundedStorable for CallerId {
     const MAX_SIZE: u32 = MAX_VALUE_SIZE;
 
     const IS_FIXED_SIZE: bool = false;
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize, CandidType)]
-struct Agent_id(String);
+struct AgentId(String);
 
-impl Storable for Agent_id {
+impl Storable for AgentId {
     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
         // String already implements `Storable`.
         self.0.to_bytes()
@@ -56,7 +54,7 @@ impl Storable for Agent_id {
     }
 }
 
-impl BoundedStorable for Agent_id {
+impl BoundedStorable for AgentId {
     const MAX_SIZE: u32 = MAX_VALUE_SIZE;
 
     const IS_FIXED_SIZE: bool = false;
@@ -93,7 +91,7 @@ pub enum Roles {
 pub struct History {
     pub role: Roles,
     pub content: String,
-    // timestamp: String,
+    pub timestamp: String,
 }
 
 impl Storable for History {
@@ -111,7 +109,7 @@ impl BoundedStorable for History {
     const IS_FIXED_SIZE: bool = false;
 }
 
-struct AgentContentMap(StableBTreeMap<Agent_id, Content, Memory>);
+struct AgentContentMap(StableBTreeMap<AgentId, Content, Memory>);
 
 impl Storable for AgentContentMap {
     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
@@ -122,8 +120,8 @@ impl Storable for AgentContentMap {
 
     fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
         // Deserialize into a vector of key-value pairs
-        let decoded: Vec<(Agent_id, Content)> =
-            Decode!(bytes.as_ref(), Vec<(Agent_id, Content)>).unwrap();
+        let decoded: Vec<(AgentId, Content)> =
+            Decode!(bytes.as_ref(), Vec<(AgentId, Content)>).unwrap();
         let mut map =
             StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1))));
         for (k, v) in decoded {
@@ -140,8 +138,8 @@ impl BoundedStorable for AgentContentMap {
 
 impl History {
     pub fn record_history(history_entry: (History, History), agent_id: String, caller: &String) {
-        let caller_id = Caller_id(caller.clone());
-        let agent_id = Agent_id(agent_id);
+        let caller_id = CallerId(caller.clone());
+        let agent_id = AgentId(agent_id);
 
         MAP.with(|map| {
             let mut map = map.borrow_mut();
@@ -167,8 +165,8 @@ impl History {
     }
 
     pub fn read_history(caller_id: &String, agent_id: String) -> Vec<(History, History)> {
-        let caller_id = Caller_id(caller_id.clone());
-        let agent_id = Agent_id(agent_id);
+        let caller_id = CallerId(caller_id.clone());
+        let agent_id = AgentId(agent_id);
 
         MAP.with(|map| {
             let map = map.borrow();
