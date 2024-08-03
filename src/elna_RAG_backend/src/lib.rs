@@ -12,12 +12,13 @@ use helpers::history::{History, Roles};
 use helpers::out_calls::{post_json, transform_impl};
 use helpers::prompt::get_prompt;
 use ic_cdk::{export_candid, post_upgrade, query, update};
+use std::fmt::Write;
 use time::{Duration, OffsetDateTime};
 
 pub fn fromat_time() -> String {
     let timestamp_ns = ic_cdk::api::time();
-    let timestamp_s = timestamp_ns / 1_000_000_000; // convert to seconds
-    let nanos_remainder = timestamp_ns % 1_000_000_000; // get remaining nanoseconds
+    let timestamp_s = timestamp_ns / 1_000_000_000;
+    let nanos_remainder = timestamp_ns % 1_000_000_000;
 
     let time = OffsetDateTime::from_unix_timestamp(timestamp_s as i64).unwrap()
         + Duration::nanoseconds(nanos_remainder as i64);
@@ -105,7 +106,53 @@ pub enum Error {
     HttpError(String),
     BodyNonSerializable,
 }
+#[update]
+async fn format_query(
+    agent_id: String,
+    query_text: String,
+    history: Vec<(History, History)>,
+) -> String {
+    let history_vec = {
+        if history.is_empty() {
+            let caller_id = ic_cdk::caller().to_string();
+            History::read_history(&caller_id, agent_id)
+        } else {
+            history.clone()
+        }
+    };
+    let mut formatted_query = String::from("");
+    let mut previous_chats = String::from("");
+    if !history_vec.is_empty() {
+        let history_len = history_vec.len();
+        let start_index = if history_len >= 2 { history_len - 2 } else { 0 };
 
+        for i in start_index..history_len {
+            let (history1, history2) = &history_vec[i];
+            writeln!(
+                previous_chats,
+                "{:?}: {} at: {}",
+                history1.role, history1.content, history1.timestamp
+            )
+            .unwrap();
+            writeln!(
+                previous_chats,
+                "{:?}: {} at: {}",
+                history2.role, history2.content, history2.timestamp
+            )
+            .unwrap();
+        }
+        writeln!(
+            formatted_query,
+            " previous conversation context:{} Current question:{}",
+            previous_chats, query_text
+        )
+        .unwrap();
+
+        formatted_query
+    } else {
+        query_text
+    }
+}
 #[update]
 async fn chat(
     agent_id: String,
@@ -155,7 +202,6 @@ async fn chat(
     .await;
     match response {
         Ok(data) => {
-            // Record history if it was None initially
             if history.is_empty() {
                 let time = fromat_time();
                 let history_entry1 = History {
