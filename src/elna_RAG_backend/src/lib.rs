@@ -10,7 +10,7 @@ mod helpers;
 use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
 use helpers::history::{History, Roles};
 use helpers::out_calls::{post_json, transform_impl};
-use helpers::prompt::get_prompt;
+use helpers::prompt::{get_prompt, SUMMARY};
 use ic_cdk::{export_candid, post_upgrade, query, update};
 use std::fmt::Write;
 use time::{Duration, OffsetDateTime};
@@ -120,34 +120,40 @@ async fn format_query(
             history.clone()
         }
     };
-    let mut formatted_query = String::from("");
-    let mut previous_chats = String::from("");
-    if !history_vec.is_empty() {
-        let history_len = history_vec.len();
-        let start_index = if history_len >= 2 { history_len - 2 } else { 0 };
 
-        for i in start_index..history_len {
-            let (history1, history2) = &history_vec[i];
-            writeln!(
-                previous_chats,
-                "{:?}: {} at: {}",
-                history1.role, history1.content, history1.timestamp
-            )
-            .unwrap();
-            writeln!(
-                previous_chats,
-                "{:?}: {} at: {}",
-                history2.role, history2.content, history2.timestamp
-            )
-            .unwrap();
-        }
+    if !history_vec.is_empty() {
+        let mut formatted_query = String::from("");
+        let mut previous_chats = String::from("");
+        SUMMARY.with(|summary| {
+            let summary = summary.borrow();
+
+            if !summary.is_empty() {
+                previous_chats = summary.clone();
+
+                let (history1, history2) = &history_vec[history_vec.len() - 1];
+
+                writeln!(previous_chats, "{:?}: {}", history1.role, history1.content,).unwrap();
+                writeln!(previous_chats, "{:?}: {}", history2.role, history2.content,).unwrap();
+            } else {
+                let history_len = history_vec.len();
+                let start_index = if history_len >= 2 { history_len - 2 } else { 0 };
+
+                for i in start_index..history_len {
+                    let (history1, history2) = &history_vec[i];
+                    writeln!(previous_chats, "{:?}: {} ", history1.role, history1.content,)
+                        .unwrap();
+                    writeln!(previous_chats, "{:?}: {}", history2.role, history2.content,).unwrap();
+                }
+            }
+        });
+
         writeln!(
             formatted_query,
             " previous conversation context:{} Current question:{}",
             previous_chats, query_text
         )
         .unwrap();
-
+        ic_cdk::println!("{}", formatted_query);
         formatted_query
     } else {
         query_text

@@ -8,7 +8,7 @@ use std::fmt::Write;
 
 const MAX_CONTEXT_LENGTH: usize = 1000;
 thread_local! {
-    static SUMMARY: RefCell<String> = RefCell::new(String::new());
+    pub static SUMMARY: RefCell<String> = RefCell::new(String::new());
 }
 
 pub async fn summarise_history(
