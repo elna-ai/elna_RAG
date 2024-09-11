@@ -3,6 +3,7 @@
 
 use crate::get_envs;
 use crate::types::agent_details::{Service as AgentService, WizardDetails};
+use crate::types::embedding::Service as EmbeddingService;
 use crate::types::vectordb::{Result1, Result_, Service as VectordbService};
 use candid::{self, Principal};
 use ic_cdk::api::call::RejectionCode;
@@ -65,6 +66,18 @@ pub async fn delete_collection_from_db(
             Result_::Ok => Ok("succesfully deleted".to_string()),
             Result_::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
         },
+        Err(rejection) => Err(rejection),
+    }
+}
+
+pub async fn embedding_model(text: String) -> Result<Vec<Vec<f32>>, (RejectionCode, String)> {
+    let canister_id = get_envs().embedding_model_canister_id;
+    let embedding_service = EmbeddingService(Principal::from_text(canister_id).unwrap());
+    let result: Result<(Vec<Vec<f32>>,), (RejectionCode, String)> =
+        embedding_service.get_embeddings(text).await;
+
+    match result {
+        Ok(result) => Ok(result.0),
         Err(rejection) => Err(rejection),
     }
 }

@@ -7,7 +7,9 @@ use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
-use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
+use helpers::canister_calls::{
+    delete_collection_from_db, embedding_model, get_agent_details, get_db_file_names,
+};
 use helpers::history::{History, Roles};
 use helpers::out_calls::{post_json, transform_impl};
 use helpers::prompt::{get_prompt, summarise_history};
@@ -23,6 +25,7 @@ pub struct Envs {
     wizard_details_canister_id: String,
     external_service_url: String,
     vectordb_canister_id: String,
+    embedding_model_canister_id: String,
 }
 
 #[init]
@@ -32,6 +35,7 @@ fn init(args: Envs) {
         envs.wizard_details_canister_id = args.wizard_details_canister_id;
         envs.external_service_url = args.external_service_url;
         envs.vectordb_canister_id = args.vectordb_canister_id;
+        envs.embedding_model_canister_id = args.embedding_model_canister_id;
     })
 }
 
@@ -47,6 +51,7 @@ pub fn get_envs() -> Envs {
             wizard_details_canister_id: env.wizard_details_canister_id.clone(),
             external_service_url: env.external_service_url.clone(),
             vectordb_canister_id: env.vectordb_canister_id.clone(),
+            embedding_model_canister_id: env.embedding_model_canister_id.clone(),
         }
     })
 }
@@ -166,6 +171,11 @@ async fn get_file_names(
 #[update]
 async fn delete_collections_(index_name: String) -> Result<String, (RejectionCode, String)> {
     delete_collection_from_db(index_name).await
+}
+
+#[update]
+async fn get_embeddings(text: String) -> Result<Vec<Vec<f32>>, (RejectionCode, String)> {
+    embedding_model(text).await
 }
 
 // required to process response from outbound http call

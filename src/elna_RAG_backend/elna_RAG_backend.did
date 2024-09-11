@@ -3,6 +3,7 @@ type Envs = record {
   external_service_url : text;
   wizard_details_canister_id : text;
   vectordb_canister_id : text;
+  embedding_model_canister_id : text;
 };
 type Error = variant {
   CantParseHost;
@@ -30,6 +31,10 @@ type Response = record { body : Body; statusCode : nat16 };
 type Result = variant { Ok : Response; Err : Error };
 type Result_1 = variant { Ok : text; Err : record { RejectionCode; text } };
 type Result_2 = variant {
+  Ok : vec vec float32;
+  Err : record { RejectionCode; text };
+};
+type Result_3 = variant {
   Ok : vec text;
   Err : record { RejectionCode; text; text };
 };
@@ -40,6 +45,7 @@ service : (Envs) -> {
       Result,
     );
   delete_collections_ : (text) -> (Result_1);
-  get_file_names : (text) -> (Result_2);
+  get_embeddings : (text) -> (Result_2);
+  get_file_names : (text) -> (Result_3);
   transform : (TransformArgs) -> (HttpResponse) query;
 }
