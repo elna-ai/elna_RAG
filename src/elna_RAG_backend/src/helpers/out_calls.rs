@@ -89,7 +89,8 @@ where
 }
 
 // Strips all data that is not needed from the original response.
-pub fn transform_impl(raw: TransformArgs) -> HttpResponse {
+#[ic_cdk::query]
+fn transform_impl(raw: TransformArgs) -> HttpResponse {
     let headers = vec![
         HttpHeader {
             name: "Content-Security-Policy".to_string(),

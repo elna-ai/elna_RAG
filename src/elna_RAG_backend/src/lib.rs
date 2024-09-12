@@ -7,13 +7,11 @@ use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
-use helpers::canister_calls::{
-    delete_collection_from_db, embedding_model, get_agent_details, get_db_file_names,
-};
+use helpers::canister_calls::get_agent_details;
 use helpers::history::{History, Roles};
-use helpers::out_calls::{post_json, transform_impl};
-use helpers::prompt::{get_prompt, summarise_history};
-use ic_cdk::{export_candid, post_upgrade, query, update};
+use helpers::out_calls::post_json;
+use helpers::prompt::get_prompt;
+use ic_cdk::{export_candid, post_upgrade, update};
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
@@ -159,30 +157,6 @@ async fn chat(
         }
         Err(e) => Err(e),
     }
-}
-
-#[update]
-async fn get_file_names(
-    index_name: String,
-) -> Result<Vec<String>, (RejectionCode, String, String)> {
-    get_db_file_names(index_name).await
-}
-
-#[update]
-async fn delete_collections_(index_name: String) -> Result<String, (RejectionCode, String)> {
-    delete_collection_from_db(index_name).await
-}
-
-#[update]
-async fn get_embeddings(text: String) -> Result<Vec<Vec<f32>>, (RejectionCode, String)> {
-    embedding_model(text).await
-}
-
-// required to process response from outbound http call
-// do not delete these.
-#[query]
-fn transform(raw: TransformArgs) -> HttpResponse {
-    transform_impl(raw)
 }
 
 export_candid!();

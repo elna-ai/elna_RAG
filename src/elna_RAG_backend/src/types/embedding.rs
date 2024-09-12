@@ -17,7 +17,7 @@ impl Service {
     pub async fn clear_vocab_bytes(&self) -> Result<()> {
         ic_cdk::call(self.0, "clear_vocab_bytes", ()).await
     }
-    pub async fn get_embeddings(&self, arg0: String) -> Result<(Vec<Vec<f32>>,)> {
+    pub async fn get_embeddings(&self, arg0: String) -> Result<(Vec<f32>,)> {
         ic_cdk::call(self.0, "get_embeddings", (arg0,)).await
     }
     pub async fn setup(&self) -> Result<(Result_,)> {

@@ -518,6 +518,7 @@ version = "0.1.0"
 dependencies = [
  "candid",
  "candid-extractor",
+ "futures",
  "ic-cdk",
  "ic-cdk-macros",
  "ic-cdk-timers",
