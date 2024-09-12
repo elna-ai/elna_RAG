@@ -81,6 +81,20 @@ async fn inset_data(
     }
 }
 
+#[ic_cdk::update]
+async fn build_index(index_name: String) -> Result<String, (RejectionCode, String)> {
+    let canister_id = get_envs().vectordb_canister_id;
+    let vector_db = VectordbService(Principal::from_text(canister_id).unwrap());
+    let result = vector_db.build_index(index_name).await;
+    match result {
+        Ok(result1) => match result1.0 {
+            Result_::Ok => Ok("Done".to_string()),
+            Result_::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
+        },
+        Err(rejection) => Err(rejection),
+    }
+}
+
 pub async fn db_query(
     index_name: String,
     q: Vec<f32>,
@@ -126,14 +140,15 @@ async fn delete_collection_from_db(index_name: String) -> Result<String, (Reject
 
     match result {
         Ok((result1,)) => match result1 {
-            Result_::Ok => Ok("succesfully deleted".to_string()),
+            Result_::Ok => Ok("Successfully Deleted".to_string()),
             Result_::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
         },
         Err(rejection) => Err(rejection),
     }
 }
 
-pub async fn embedding_model(text: String) -> Result<Vec<f32>, (RejectionCode, String)> {
+#[ic_cdk::update]
+async fn embedding_model(text: String) -> Result<Vec<f32>, (RejectionCode, String)> {
     let canister_id = get_envs().embedding_model_canister_id;
     let embedding_service = EmbeddingService(Principal::from_text(canister_id).unwrap());
     let result = embedding_service.get_embeddings(text).await;
