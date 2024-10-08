@@ -1,4 +1,4 @@
-use crate::helpers::canister_calls::db_query;
+use crate::helpers::canister_calls::search;
 use crate::helpers::history::History;
 use crate::helpers::out_calls::post_json;
 use crate::{get_envs, Agent, Error, Message, Response};
@@ -84,7 +84,7 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
     ",agent.biography);
 
     let content: Result<String, (RejectionCode, String)> =
-        db_query(agent.index_name, agent.query_vector, limit).await;
+        search(agent.index_name, agent.query_text.clone(), limit).await;
 
     let prompt_template = match content {
         Ok(response) => {

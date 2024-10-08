@@ -132,6 +132,11 @@ pub fn transform_impl(raw: TransformArgs) -> HttpResponse {
     return res;
 }
 
+#[ic_cdk::query]
+fn transform(raw: TransformArgs) -> HttpResponse {
+    transform_impl(raw)
+}
+
 // TODO: fix calculation error
 fn calculate_cycles(request: &CanisterHttpRequestArgument, response_size: u64) -> u128 {
     const SUBNET: u128 = 13;

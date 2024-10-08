@@ -41,7 +41,7 @@ impl Service {
     pub async fn build_index(&self, arg0: String) -> Result<(Result_,)> {
         ic_cdk::call(self.0, "build_index", (arg0,)).await
     }
-    pub async fn create_collection(&self, arg0: String, arg1: u64) -> Result<(Result_,)> {
+    pub async fn create_collection(&self, arg0: String, arg1: usize) -> Result<(Result_,)> {
         ic_cdk::call(self.0, "create_collection", (arg0, arg1)).await
     }
     pub async fn delete_collection(&self, arg0: String) -> Result<(Result_,)> {

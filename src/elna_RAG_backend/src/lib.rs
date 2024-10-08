@@ -1,17 +1,19 @@
 use candid::CandidType;
 mod types;
+
 use ic_cdk::api::call::RejectionCode;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
+
 use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 mod helpers;
-use helpers::canister_calls::{delete_collection_from_db, get_agent_details, get_db_file_names};
+use helpers::canister_calls::get_agent_details;
 use helpers::history::{History, Roles};
-use helpers::out_calls::{post_json, transform_impl};
-use helpers::prompt::{get_prompt, summarise_history};
-use ic_cdk::{export_candid, post_upgrade, query, update};
+use helpers::out_calls::post_json;
+use helpers::prompt::get_prompt;
+use ic_cdk::{export_candid, post_upgrade, update};
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
@@ -23,6 +25,7 @@ pub struct Envs {
     wizard_details_canister_id: String,
     external_service_url: String,
     vectordb_canister_id: String,
+    embedding_model_canister_id: String,
 }
 
 #[init]
@@ -32,6 +35,7 @@ fn init(args: Envs) {
         envs.wizard_details_canister_id = args.wizard_details_canister_id;
         envs.external_service_url = args.external_service_url;
         envs.vectordb_canister_id = args.vectordb_canister_id;
+        envs.embedding_model_canister_id = args.embedding_model_canister_id;
     })
 }
 
@@ -47,6 +51,7 @@ pub fn get_envs() -> Envs {
             wizard_details_canister_id: env.wizard_details_canister_id.clone(),
             external_service_url: env.external_service_url.clone(),
             vectordb_canister_id: env.vectordb_canister_id.clone(),
+            embedding_model_canister_id: env.embedding_model_canister_id.clone(),
         }
     })
 }
@@ -72,7 +77,7 @@ pub struct Body {
 }
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, CandidType)]
+#[derive(Deserialize, CandidType, Debug)]
 struct Response {
     statusCode: u16,
     body: Body,
@@ -125,7 +130,7 @@ async fn chat(
     let message = get_prompt(agent, 2, hist_uid.to_string()).await;
 
     let external_url = get_envs().external_service_url;
-
+    ic_cdk::println!("HTTP out call");
     let response: Result<Response, Error> = post_json::<Message, Response>(
         format!("{}/canister-chat", external_url).as_str(),
         message,
@@ -133,6 +138,8 @@ async fn chat(
         None,
     )
     .await;
+    ic_cdk::println!("Response: {:?}", response);
+
     match response {
         Ok(data) => {
             // Record history if it was None initially
@@ -154,25 +161,6 @@ async fn chat(
         }
         Err(e) => Err(e),
     }
-}
-
-#[update]
-async fn get_file_names(
-    index_name: String,
-) -> Result<Vec<String>, (RejectionCode, String, String)> {
-    get_db_file_names(index_name).await
-}
-
-#[update]
-async fn delete_collections_(index_name: String) -> Result<String, (RejectionCode, String)> {
-    delete_collection_from_db(index_name).await
-}
-
-// required to process response from outbound http call
-// do not delete these.
-#[query]
-fn transform(raw: TransformArgs) -> HttpResponse {
-    transform_impl(raw)
 }
 
 export_candid!();
