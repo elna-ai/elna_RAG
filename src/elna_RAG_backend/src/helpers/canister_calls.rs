@@ -6,7 +6,6 @@ use crate::types::agent_details::{Service as AgentService, WizardDetails};
 use crate::types::embedding::Service as EmbeddingService;
 use crate::types::vectordb::{Result1, Result_, Service as VectordbService};
 use candid::{self, Principal};
-use futures::future;
 use ic_cdk::api::call::RejectionCode;
 
 pub async fn get_agent_details(wizard_id: String) -> Option<WizardDetails> {
@@ -20,7 +19,10 @@ pub async fn get_agent_details(wizard_id: String) -> Option<WizardDetails> {
 }
 
 #[ic_cdk::update]
-async fn create_index(index_name: String, size: usize) -> Result<String, (RejectionCode, String)> {
+async fn create_collection(
+    index_name: String,
+    size: usize,
+) -> Result<String, (RejectionCode, String)> {
     let canister_id = get_envs().vectordb_canister_id;
     let vector_db = VectordbService(Principal::from_text(canister_id).unwrap());
     let result = vector_db.create_collection(index_name, size).await;
@@ -35,48 +37,22 @@ async fn create_index(index_name: String, size: usize) -> Result<String, (Reject
 }
 
 #[ic_cdk::update]
-async fn get_embeddings(documents: Vec<String>) -> Result<Vec<Vec<f32>>, (RejectionCode, String)> {
-    let futures = documents.into_iter().map(|text| embedding_model(text));
-
-    // Collect all embeddings asynchronously
-    let results = future::join_all(futures).await;
-
-    // Process the results: check for any errors and collect successful embeddings
-    let mut embeddings = Vec::new();
-
-    for result in results {
-        match result {
-            Ok(vec) => embeddings.push(vec),
-            Err(e) => return Err(e), // Return the first error encountered
-        }
-    }
-
-    Ok(embeddings)
-}
-
-#[ic_cdk::update]
-async fn inset_data(
+async fn insert_data(
     index_name: String,
     documents: Vec<String>,
+    embeddings: Vec<Vec<f32>>,
     file_name: String,
 ) -> Result<String, (RejectionCode, String)> {
-    let result = get_embeddings(documents.clone()).await;
-
-    match result {
-        Ok(embeddings) => {
-            let canister_id = get_envs().vectordb_canister_id;
-            let vector_db = VectordbService(Principal::from_text(canister_id).unwrap());
-            let vec_result = vector_db
-                .insert(index_name, embeddings, documents, file_name)
-                .await;
-            match vec_result {
-                Ok(result1) => match result1.0 {
-                    Result_::Ok => Ok("Data Inserted".to_string()),
-                    Result_::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
-                },
-                Err(rejection) => Err(rejection),
-            }
-        }
+    let canister_id = get_envs().vectordb_canister_id;
+    let vector_db = VectordbService(Principal::from_text(canister_id).unwrap());
+    let vec_result = vector_db
+        .insert(index_name, embeddings, documents, file_name)
+        .await;
+    match vec_result {
+        Ok(result1) => match result1.0 {
+            Result_::Ok => Ok("Data Inserted".to_string()),
+            Result_::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
+        },
         Err(rejection) => Err(rejection),
     }
 }
@@ -95,19 +71,53 @@ async fn build_index(index_name: String) -> Result<String, (RejectionCode, Strin
     }
 }
 
-pub async fn db_query(
+#[ic_cdk::update]
+async fn create_index(
     index_name: String,
-    q: Vec<f32>,
+    size: usize,
+    documents: Vec<String>,
+    embeddings: Vec<Vec<f32>>,
+    file_name: String,
+) -> Result<String, (RejectionCode, String)> {
+    ic_cdk::println!("Creating Index");
+    create_collection(index_name.clone(), size).await?;
+    ic_cdk::println!("Collection Created");
+    ic_cdk::println!("*******************");
+
+    ic_cdk::println!("Inserting Data");
+    insert_data(index_name.clone(), documents, embeddings, file_name).await?;
+    ic_cdk::println!("Data Inserted");
+    ic_cdk::println!("*************");
+
+    ic_cdk::println!("Indexing..");
+    build_index(index_name.clone()).await?;
+    ic_cdk::println!("Index created");
+
+    Ok("Index created successfully".to_string())
+}
+
+#[ic_cdk::update]
+pub async fn search(
+    index_name: String,
+    query_text: String,
     limit: i32,
 ) -> Result<String, (RejectionCode, String)> {
-    let vector_db = VectordbService(Principal::from_text(get_envs().vectordb_canister_id).unwrap());
-    let result = vector_db.query(index_name, q, limit).await;
+    let emebdding_result = embedding_model(query_text).await;
+    match emebdding_result {
+        Ok(embeddings) => {
+            let vector_db =
+                VectordbService(Principal::from_text(get_envs().vectordb_canister_id).unwrap());
+            let result = vector_db.query(index_name, embeddings, limit).await;
 
-    match result {
-        Ok(response) => match response.0 {
-            Result1::Ok(results) => Ok(results.join("\n")),
-            Result1::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
-        },
+            match result {
+                Ok(response) => match response.0 {
+                    Result1::Ok(results) => Ok(results.join("\n")),
+                    Result1::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
+                },
+                Err(err) => Err(err),
+            }
+        }
+
         Err(err) => Err(err),
     }
 }

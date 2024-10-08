@@ -89,8 +89,7 @@ where
 }
 
 // Strips all data that is not needed from the original response.
-#[ic_cdk::query]
-fn transform_impl(raw: TransformArgs) -> HttpResponse {
+pub fn transform_impl(raw: TransformArgs) -> HttpResponse {
     let headers = vec![
         HttpHeader {
             name: "Content-Security-Policy".to_string(),
@@ -131,6 +130,11 @@ fn transform_impl(raw: TransformArgs) -> HttpResponse {
         ic_cdk::api::print(format!("Received an error from api: err = {:?}", raw));
     }
     return res;
+}
+
+#[ic_cdk::query]
+fn transform(raw: TransformArgs) -> HttpResponse {
+    transform_impl(raw)
 }
 
 // TODO: fix calculation error

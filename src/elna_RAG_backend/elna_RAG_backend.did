@@ -38,10 +38,6 @@ type Result_3 = variant {
   Ok : vec text;
   Err : record { RejectionCode; text; text };
 };
-type Result_4 = variant {
-  Ok : vec vec float32;
-  Err : record { RejectionCode; text };
-};
 type Roles = variant { System; User; Assistant };
 type TransformArgs = record { context : vec nat8; response : HttpResponse };
 service : (Envs) -> {
@@ -49,11 +45,12 @@ service : (Envs) -> {
   chat : (text, text, vec float32, text, vec record { History; History }) -> (
       Result_1,
     );
-  create_index : (text, nat64) -> (Result);
+  create_collection : (text, nat64) -> (Result);
+  create_index : (text, nat64, vec text, vec vec float32, text) -> (Result);
   delete_collection_from_db : (text) -> (Result);
   embedding_model : (text) -> (Result_2);
   get_db_file_names : (text) -> (Result_3);
-  get_embeddings : (vec text) -> (Result_4);
-  inset_data : (text, vec text, text) -> (Result);
-  transform_impl : (TransformArgs) -> (HttpResponse) query;
+  insert_data : (text, vec text, vec vec float32, text) -> (Result);
+  search : (text, text, int32) -> (Result);
+  transform : (TransformArgs) -> (HttpResponse) query;
 }

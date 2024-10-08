@@ -1,8 +1,10 @@
 use candid::CandidType;
 mod types;
+
 use ic_cdk::api::call::RejectionCode;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
+
 use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
@@ -75,7 +77,7 @@ pub struct Body {
 }
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, CandidType)]
+#[derive(Deserialize, CandidType, Debug)]
 struct Response {
     statusCode: u16,
     body: Body,
@@ -128,7 +130,7 @@ async fn chat(
     let message = get_prompt(agent, 2, hist_uid.to_string()).await;
 
     let external_url = get_envs().external_service_url;
-
+    ic_cdk::println!("HTTP out call");
     let response: Result<Response, Error> = post_json::<Message, Response>(
         format!("{}/canister-chat", external_url).as_str(),
         message,
@@ -136,6 +138,8 @@ async fn chat(
         None,
     )
     .await;
+    ic_cdk::println!("Response: {:?}", response);
+
     match response {
         Ok(data) => {
             // Record history if it was None initially
