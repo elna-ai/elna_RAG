@@ -84,7 +84,7 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
     ",agent.biography);
 
     let content: Result<String, (RejectionCode, String)> =
-        search(agent.index_name, agent.query_text.clone(), limit).await;
+        search(agent.index_name, agent.query_vector, limit).await;
 
     let prompt_template = match content {
         Ok(response) => {

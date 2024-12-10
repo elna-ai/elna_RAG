@@ -1,6 +1,7 @@
 use candid::CandidType;
 mod types;
 
+use helpers::canister_calls::embedding_model;
 use ic_cdk::api::call::RejectionCode;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
 use ic_cdk::api::management_canister::http_request::TransformArgs;
@@ -94,7 +95,7 @@ pub enum Error {
 async fn chat(
     agent_id: String,
     query_text: String,
-    query_vector: Vec<f32>,
+    query_vector: Option<Vec<f32>>,
     uuid: String,
     history: Vec<(History, History)>,
 ) -> Result<Response, Error> {
@@ -116,12 +117,17 @@ async fn chat(
     ic_cdk::println!("Query Text: {:?}", query_text);
     ic_cdk::println!("Agent history: {:?}", agent_history);
 
+    let vectors = match query_vector {
+        Some(vector) => vector,
+        None => embedding_model(query_text.clone()).await,
+    };
+
     let agent = Agent {
         query_text: query_text.clone(),
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
 
-        query_vector: query_vector,
+        query_vector: vectors,
         index_name: agent_id.clone(),
         history: agent_history,
     };
