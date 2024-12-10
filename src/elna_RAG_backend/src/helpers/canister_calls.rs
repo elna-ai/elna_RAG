@@ -118,6 +118,7 @@ pub async fn search(
 async fn get_db_file_names(
     index_name: String,
 ) -> Result<Vec<String>, (RejectionCode, String, String)> {
+    ic_cdk::println!("Fetch DB filenames ");
     let caller = ic_cdk::api::caller();
     let vector_db = VectordbService(Principal::from_text(get_envs().vectordb_canister_id).unwrap());
     let result = vector_db.get_docs(index_name).await;
