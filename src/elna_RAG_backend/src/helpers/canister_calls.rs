@@ -99,25 +99,17 @@ async fn create_index(
 #[ic_cdk::update]
 pub async fn search(
     index_name: String,
-    query_text: String,
+    embeddings: Vec<f32>,
     limit: i32,
 ) -> Result<String, (RejectionCode, String)> {
-    let emebdding_result = embedding_model(query_text).await;
-    match emebdding_result {
-        Ok(embeddings) => {
-            let vector_db =
-                VectordbService(Principal::from_text(get_envs().vectordb_canister_id).unwrap());
-            let result = vector_db.query(index_name, embeddings, limit).await;
+    let vector_db = VectordbService(Principal::from_text(get_envs().vectordb_canister_id).unwrap());
+    let result = vector_db.query(index_name, embeddings, limit).await;
 
-            match result {
-                Ok(response) => match response.0 {
-                    Result1::Ok(results) => Ok(results.join("\n")),
-                    Result1::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
-                },
-                Err(err) => Err(err),
-            }
-        }
-
+    match result {
+        Ok(response) => match response.0 {
+            Result1::Ok(results) => Ok(results.join("\n")),
+            Result1::Err(err) => Err((RejectionCode::CanisterError, err.to_string())),
+        },
         Err(err) => Err(err),
     }
 }
@@ -126,6 +118,7 @@ pub async fn search(
 async fn get_db_file_names(
     index_name: String,
 ) -> Result<Vec<String>, (RejectionCode, String, String)> {
+    ic_cdk::println!("Fetch DB filenames ");
     let caller = ic_cdk::api::caller();
     let vector_db = VectordbService(Principal::from_text(get_envs().vectordb_canister_id).unwrap());
     let result = vector_db.get_docs(index_name).await;
@@ -158,13 +151,17 @@ async fn delete_collection_from_db(index_name: String) -> Result<String, (Reject
 }
 
 #[ic_cdk::update]
-async fn embedding_model(text: String) -> Result<Vec<f32>, (RejectionCode, String)> {
+pub async fn embedding_model(text: String) -> Vec<f32> {
     let canister_id = get_envs().embedding_model_canister_id;
     let embedding_service = EmbeddingService(Principal::from_text(canister_id).unwrap());
-    let result = embedding_service.get_embeddings(text).await;
+    let result: Result<(Vec<f32>,), (RejectionCode, String)> =
+        embedding_service.get_embeddings(text).await;
 
     match result {
-        Ok(result) => Ok(result.0),
-        Err(rejection) => Err(rejection),
+        Ok(result) => result.0,
+        Err(rejection) => {
+            ic_cdk::println!("Error in embedding model {:?}", rejection);
+            Vec::new() // Return an empty Vec<f32> as a fallback
+        }
     }
 }

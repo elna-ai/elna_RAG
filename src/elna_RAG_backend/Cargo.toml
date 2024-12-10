@@ -11,8 +11,8 @@ crate-type = ["cdylib"]
 [dependencies]
 candid = "0.10"
 candid-extractor = "0.1.4"
-ic-cdk = "0.12"
-ic-cdk-macros = "0.8.4"
+ic-cdk = "0.17.0"
+# ic-cdk-macros = "0.8.4"
 ic-cdk-timers = "0.6" # Feel free to remove this dependency if you don't need timers
 serde = "1.0.197"
 serde_json = "1.0.120"
