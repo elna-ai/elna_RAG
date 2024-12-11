@@ -1,6 +1,7 @@
 use candid::CandidType;
 mod types;
 
+use candid::Principal;
 use helpers::canister_calls::embedding_model;
 use ic_cdk::api::call::RejectionCode;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
@@ -108,11 +109,15 @@ async fn chat(
     };
 
     let caller = ic_cdk::api::caller().to_string();
+    ic_cdk::println!("Caller: {:?}", caller);
 
-    let agent_history: Vec<(History, History)> = if history.is_empty() {
+    let mut anonymous = true;
+    let agent_history = if caller == Principal::anonymous().to_text() {
         History::read_history(&caller, agent_id.clone())
     } else {
-        history.clone()
+        anonymous = false;
+
+        history
     };
     ic_cdk::println!("Query Text: {:?}", query_text);
     ic_cdk::println!("Agent history: {:?}", agent_history);
@@ -150,7 +155,7 @@ async fn chat(
     match response {
         Ok(data) => {
             // Record history if it was None initially
-            if history.is_empty() {
+            if anonymous == false {
                 let history_entry1 = History {
                     role: Roles::User,
                     content: query_text,
