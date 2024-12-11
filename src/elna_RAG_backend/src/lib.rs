@@ -113,11 +113,10 @@ async fn chat(
 
     let mut anonymous = true;
     let agent_history = if caller == Principal::anonymous().to_text() {
-        History::read_history(&caller, agent_id.clone())
+        history
     } else {
         anonymous = false;
-
-        history
+        History::read_history(&caller, agent_id.clone())
     };
     ic_cdk::println!("Query Text: {:?}", query_text);
     ic_cdk::println!("Agent history: {:?}", agent_history);
