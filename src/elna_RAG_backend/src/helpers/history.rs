@@ -194,4 +194,31 @@ impl History {
             }
         });
     }
+
+    pub fn print_map() {
+        MAP.with(|map| {
+            let map = map.borrow();
+            println!("Complete Map Contents:");
+
+            for (caller_id, agent_content_map) in map.iter() {
+                println!("CallerId: {:?}", caller_id.0);
+
+                for (agent_id, content) in agent_content_map.0.iter() {
+                    println!("  AgentId: {:?}", agent_id.0);
+                    println!("    History Entries:");
+
+                    for (entry_1, entry_2) in &content.0 {
+                        println!(
+                            "      Entry 1 - Role: {:?}, Content: {}",
+                            entry_1.role, entry_1.content
+                        );
+                        println!(
+                            "      Entry 2 - Role: {:?}, Content: {}",
+                            entry_2.role, entry_2.content
+                        );
+                    }
+                }
+            }
+        });
+    }
 }

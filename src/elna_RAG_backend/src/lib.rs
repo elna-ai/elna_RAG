@@ -14,7 +14,7 @@ use helpers::canister_calls::get_agent_details;
 use helpers::history::{History, Roles};
 use helpers::out_calls::post_json;
 use helpers::prompt::get_prompt;
-use ic_cdk::{export_candid, post_upgrade, update};
+use ic_cdk::{export_candid, post_upgrade, query, update};
 
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
@@ -90,6 +90,17 @@ pub enum Error {
     CantParseHost,
     HttpError(String),
     BodyNonSerializable,
+}
+
+#[update]
+pub fn delete_history(agent_id: String) -> () {
+    let caller_id = ic_cdk::api::caller().to_string();
+    History::clear_history(&caller_id, agent_id);
+}
+
+#[query]
+pub fn print_history() -> () {
+    History::print_map();
 }
 
 #[update]
