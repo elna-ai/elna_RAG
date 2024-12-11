@@ -4,10 +4,8 @@ use serde::Serialize;
 use candid::{CandidType, Decode, Deserialize, Encode};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap, Storable};
-use std::clone;
-use std::collections::BTreeMap;
 use std::fmt::Write;
-use std::{borrow::Cow, cell::RefCell}; // Explicitly import the trait for `writeln!`
+use std::{borrow::Cow, cell::RefCell};
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 
@@ -231,16 +229,4 @@ impl History {
 
         history
     }
-
-    // pub fn get_history() -> BTreeMap<CallerId, AgentContentMap> {
-    //     MAP.with(|map| {
-    //         let map_ref = map.borrow();
-
-    //         // Transform StableBTreeMap into a standard BTreeMap
-    //         map_ref
-    //             .iter()
-    //             .map(|(key, value)| (key.clone(), value.clone()))
-    //             .collect()
-    //     })
-    // }
 }

@@ -99,11 +99,6 @@ pub fn delete_history(agent_id: String) -> () {
 }
 
 #[update]
-pub fn print_history() -> String {
-    History::print_map()
-}
-
-#[update]
 async fn chat(
     agent_id: String,
     query_text: String,
