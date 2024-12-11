@@ -52,7 +52,6 @@ service : (Envs) -> {
   embedding_model : (text) -> (vec float32);
   get_db_file_names : (text) -> (Result_2);
   insert_data : (text, vec text, vec vec float32, text) -> (Result);
-  print_history : () -> (text);
   search : (text, vec float32, int32) -> (Result);
   transform : (TransformArgs) -> (HttpResponse) query;
 }
