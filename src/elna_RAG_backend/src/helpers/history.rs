@@ -179,5 +179,19 @@ impl History {
         })
     }
 
-    pub fn clear_history(caller_id: &String, agent_id: String) {}
+    pub fn clear_history(caller_id: &String, agent_id: String) {
+        let caller_id = CallerId(caller_id.clone());
+        let agent_id = AgentId(agent_id);
+
+        MAP.with(|map| {
+            let mut map = map.borrow_mut();
+            if let Some(mut agent_map) = map.remove(&caller_id) {
+                agent_map.0.remove(&agent_id);
+
+                if !agent_map.0.is_empty() {
+                    map.insert(caller_id, agent_map);
+                }
+            }
+        });
+    }
 }
