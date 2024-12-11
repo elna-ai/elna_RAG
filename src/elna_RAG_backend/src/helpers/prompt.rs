@@ -116,6 +116,9 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
             .unwrap();
         }
     }
+
+    ic_cdk::println!("history string length{:?}", history_string.len());
+
     let history: String = {
         if history_string.len() > 500 {
             summarise_history(agent.history, uuid, history_string).await

@@ -15,7 +15,7 @@ type History = record { content : text; role : Roles };
 type HttpHeader = record { value : text; name : text };
 type HttpResponse = record {
   status : nat;
-  body : vec nat8;
+  body : blob;
   headers : vec HttpHeader;
 };
 type RejectionCode = variant {
@@ -31,26 +31,28 @@ type Response = record { body : Body; statusCode : nat16 };
 type Result = variant { Ok : text; Err : record { RejectionCode; text } };
 type Result_1 = variant { Ok : Response; Err : Error };
 type Result_2 = variant {
-  Ok : vec float32;
-  Err : record { RejectionCode; text };
-};
-type Result_3 = variant {
   Ok : vec text;
   Err : record { RejectionCode; text; text };
 };
 type Roles = variant { System; User; Assistant };
-type TransformArgs = record { context : vec nat8; response : HttpResponse };
+type TransformArgs = record { context : blob; response : HttpResponse };
 service : (Envs) -> {
   build_index : (text) -> (Result);
-  chat : (text, text, vec float32, text, vec record { History; History }) -> (
-      Result_1,
-    );
+  chat : (
+      text,
+      text,
+      opt vec float32,
+      text,
+      vec record { History; History },
+    ) -> (Result_1);
   create_collection : (text, nat64) -> (Result);
   create_index : (text, nat64, vec text, vec vec float32, text) -> (Result);
   delete_collection_from_db : (text) -> (Result);
-  embedding_model : (text) -> (Result_2);
-  get_db_file_names : (text) -> (Result_3);
+  delete_history : (text) -> ();
+  embedding_model : (text) -> (vec float32);
+  get_db_file_names : (text) -> (Result_2);
   insert_data : (text, vec text, vec vec float32, text) -> (Result);
-  search : (text, text, int32) -> (Result);
+  print_history : () -> (text);
+  search : (text, vec float32, int32) -> (Result);
   transform : (TransformArgs) -> (HttpResponse) query;
 }

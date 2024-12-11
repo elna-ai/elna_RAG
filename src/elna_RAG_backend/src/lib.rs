@@ -98,9 +98,9 @@ pub fn delete_history(agent_id: String) -> () {
     History::clear_history(&caller_id, agent_id);
 }
 
-#[query]
-pub fn print_history() -> () {
-    History::print_map();
+#[update]
+pub fn print_history() -> String {
+    History::print_map()
 }
 
 #[update]

@@ -4,7 +4,10 @@ use serde::Serialize;
 use candid::{CandidType, Decode, Deserialize, Encode};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap, Storable};
-use std::{borrow::Cow, cell::RefCell};
+use std::clone;
+use std::collections::BTreeMap;
+use std::fmt::Write;
+use std::{borrow::Cow, cell::RefCell}; // Explicitly import the trait for `writeln!`
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 
@@ -110,7 +113,7 @@ impl BoundedStorable for History {
 
     const IS_FIXED_SIZE: bool = false;
 }
-
+// #[derive(Clone)]
 struct AgentContentMap(StableBTreeMap<AgentId, Content, Memory>);
 
 impl Storable for AgentContentMap {
@@ -195,30 +198,49 @@ impl History {
         });
     }
 
-    pub fn print_map() {
+    pub fn print_map() -> String {
+        let mut history = String::new();
         MAP.with(|map| {
             let map = map.borrow();
-            println!("Complete Map Contents:");
+            writeln!(history, "Complete Map Contents:").unwrap();
 
             for (caller_id, agent_content_map) in map.iter() {
-                println!("CallerId: {:?}", caller_id.0);
+                writeln!(history, "CallerId: {:?}", caller_id.0).unwrap();
 
                 for (agent_id, content) in agent_content_map.0.iter() {
-                    println!("  AgentId: {:?}", agent_id.0);
-                    println!("    History Entries:");
+                    writeln!(history, "  AgentId: {:?}", agent_id.0).unwrap();
+                    writeln!(history, "    History Entries:").unwrap();
 
                     for (entry_1, entry_2) in &content.0 {
-                        println!(
+                        writeln!(
+                            history,
                             "      Entry 1 - Role: {:?}, Content: {}",
                             entry_1.role, entry_1.content
-                        );
-                        println!(
+                        )
+                        .unwrap();
+                        writeln!(
+                            history,
                             "      Entry 2 - Role: {:?}, Content: {}",
                             entry_2.role, entry_2.content
-                        );
+                        )
+                        .unwrap();
                     }
                 }
             }
         });
+
+        history
     }
+
+    // pub fn get_history() -> BTreeMap<CallerId, AgentContentMap> {
+    //     MAP.with(|map| {
+    //         let map_ref = map.borrow();
+
+    //         // Transform StableBTreeMap into a standard BTreeMap
+    //         map_ref
+    //             .iter()
+    //             .map(|(key, value)| (key.clone(), value.clone()))
+    //             .collect()
+    //     })
+    // }
 }
