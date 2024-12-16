@@ -98,6 +98,12 @@ pub fn delete_history(agent_id: String) -> () {
     History::clear_history(&caller_id, agent_id);
 }
 
+#[query]
+pub fn get_history(agent_id: String) -> Vec<(History, History)> {
+    let caller_id = ic_cdk::api::caller().to_string();
+    History::read_history(&caller_id, agent_id)
+}
+
 #[update]
 async fn chat(
     agent_id: String,
