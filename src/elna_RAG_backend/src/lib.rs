@@ -9,13 +9,13 @@ use ic_cdk::api::management_canister::http_request::TransformArgs;
 // use ic_cdk_macros::init;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
+use types::cap::DetailValue;
 mod helpers;
-use helpers::canister_calls::get_agent_details;
+use helpers::canister_calls::{get_agent_details, log};
 use helpers::history::{History, Roles};
 use helpers::out_calls::post_json;
 use helpers::prompt::get_prompt;
-use ic_cdk::{export_candid, post_upgrade, query, update};
-
+use ic_cdk::{export_candid, post_upgrade, update};
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
 
@@ -27,6 +27,7 @@ pub struct Envs {
     external_service_url: String,
     vectordb_canister_id: String,
     embedding_model_canister_id: String,
+    cap_canister_id: String,
 }
 
 #[ic_cdk::init]
@@ -37,6 +38,7 @@ fn init(args: Envs) {
         envs.external_service_url = args.external_service_url;
         envs.vectordb_canister_id = args.vectordb_canister_id;
         envs.embedding_model_canister_id = args.embedding_model_canister_id;
+        envs.cap_canister_id = args.cap_canister_id;
     })
 }
 
@@ -53,6 +55,7 @@ pub fn get_envs() -> Envs {
             external_service_url: env.external_service_url.clone(),
             vectordb_canister_id: env.vectordb_canister_id.clone(),
             embedding_model_canister_id: env.embedding_model_canister_id.clone(),
+            cap_canister_id: env.cap_canister_id.clone(),
         }
     })
 }
@@ -93,9 +96,13 @@ pub enum Error {
 }
 
 #[update]
-pub fn delete_history(agent_id: String) -> () {
-    let caller_id = ic_cdk::api::caller().to_string();
-    History::clear_history(&caller_id, agent_id);
+pub async fn delete_history(agent_id: String) -> () {
+    let caller_id = ic_cdk::api::caller();
+    History::clear_history(&caller_id.to_string(), agent_id.clone());
+    let details: Vec<(String, DetailValue)> =
+        vec![("agent_id".to_string(), DetailValue::Text(agent_id))];
+    let result = log(caller_id, "delete_history".to_string(), details).await;
+    ic_cdk::println!("Log : {:?}", result);
 }
 
 #[update]
@@ -114,15 +121,15 @@ async fn chat(
         Some(value) => value,
     };
 
-    let caller = ic_cdk::api::caller().to_string();
+    let caller = ic_cdk::api::caller();
     ic_cdk::println!("Caller: {:?}", caller);
 
     let mut anonymous = true;
-    let agent_history = if caller == Principal::anonymous().to_text() {
+    let agent_history = if caller.to_string() == Principal::anonymous().to_text() {
         history
     } else {
         anonymous = false;
-        History::read_history(&caller, agent_id.clone())
+        History::read_history(&caller.to_string(), agent_id.clone())
     };
     ic_cdk::println!("Query Text: {:?}", query_text);
     ic_cdk::println!("Agent history: {:?}", agent_history);
@@ -159,6 +166,22 @@ async fn chat(
 
     match response {
         Ok(data) => {
+            //Cap canister Logging
+
+            let details: Vec<(String, DetailValue)> = vec![
+                ("agent_id".to_string(), DetailValue::Text(agent_id.clone())),
+                (
+                    "query_text".to_string(),
+                    DetailValue::Text(query_text.clone()),
+                ),
+                (
+                    "response".to_string(),
+                    DetailValue::Text(data.body.response.clone()),
+                ),
+            ];
+            let result = log(caller, "chat".to_string(), details).await;
+            ic_cdk::println!("Log : {:?}", result);
+
             // Record history if it was None initially
             if anonymous == false {
                 let history_entry1 = History {
@@ -172,7 +195,7 @@ async fn chat(
                     // timestamp: time,
                 };
                 let history_entries = (history_entry1, history_entry2);
-                History::record_history(history_entries, agent_id.clone(), &caller);
+                History::record_history(history_entries, agent_id.clone(), &caller.to_string());
             }
             Ok(data)
         }
