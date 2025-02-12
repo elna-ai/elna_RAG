@@ -169,9 +169,9 @@ async fn chat(
             //Cap canister Logging
 
             let details: Vec<(String, DetailValue)> = vec![
-                ("agent_id".to_string(), DetailValue::Text(agent_id.clone())),
+                ("agentId".to_string(), DetailValue::Text(agent_id.clone())),
                 (
-                    "query_text".to_string(),
+                    "queryText".to_string(),
                     DetailValue::Text(query_text.clone()),
                 ),
                 (
