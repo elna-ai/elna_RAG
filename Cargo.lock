@@ -529,6 +529,7 @@ dependencies = [
  "ic-cdk-timers",
  "ic-stable-structures",
  "serde",
+ "serde_bytes",
  "serde_json",
  "time",
  "url",
