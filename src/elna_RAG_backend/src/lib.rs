@@ -15,7 +15,7 @@ use helpers::canister_calls::{get_agent_details, log};
 use helpers::history::{History, Roles};
 use helpers::out_calls::post_json;
 use helpers::prompt::get_prompt;
-use ic_cdk::{export_candid, post_upgrade, update};
+use ic_cdk::{export_candid, post_upgrade, query, update};
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
 
