@@ -2,20 +2,32 @@
 #![allow(dead_code)]
 
 use crate::get_envs;
-use crate::types::agent_details::{Service as AgentService, WizardDetails};
+use crate::types::agent_details::{Service as AgentService, WizardDetailsV3};
 use crate::types::cap::{DetailValue, Service as CapService};
 use crate::types::embedding::Service as EmbeddingService;
 use crate::types::vectordb::{Result1, Result_, Service as VectordbService};
 use candid::{self, Principal};
 use ic_cdk::api::call::RejectionCode;
 
-pub async fn get_agent_details(wizard_id: String) -> Option<WizardDetails> {
+pub async fn get_agent_details(wizard_id: String) -> Option<WizardDetailsV3> {
     let canister_id = get_envs().wizard_details_canister_id;
     let wizard_details_service = AgentService(Principal::from_text(canister_id).unwrap());
     let result = wizard_details_service.get_wizard(wizard_id).await;
     match result {
         Ok((wizard_details,)) => wizard_details,
         _ => None,
+    }
+}
+
+pub async fn update_agent_details(wizard_id: String) -> Result<String, (RejectionCode, String)> {
+    let canister_id = get_envs().wizard_details_canister_id;
+    let wizard_details_service = AgentService(Principal::from_text(canister_id).unwrap());
+    let result = wizard_details_service
+        .update_knowledge_analytics(wizard_id)
+        .await;
+    match result {
+        Ok((result1,)) => Ok(result1),
+        Err(rejection) => Err(rejection),
     }
 }
 
@@ -93,7 +105,8 @@ async fn create_index(
     ic_cdk::println!("Indexing..");
     build_index(index_name.clone()).await?;
     ic_cdk::println!("Index created");
-
+    let result = update_agent_details(index_name).await?;
+    ic_cdk::println!("Updating Wizard{}", result);
     Ok("Index created successfully".to_string())
 }
 
