@@ -64,6 +64,7 @@ service : (Envs) -> {
   delete_history : (text) -> ();
   embedding_model : (text) -> (vec float32);
   get_db_file_names : (text) -> (Result_2);
+  get_history : (text) -> (vec record { History; History }) query;
   insert_data : (text, vec text, vec vec float32, text) -> (Result);
   log : (principal, text, vec record { text; DetailValue }) -> (Result_3);
   search : (text, vec float32, int32) -> (Result);
