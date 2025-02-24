@@ -116,32 +116,6 @@ impl BoundedStorable for History {
     const IS_FIXED_SIZE: bool = false;
 }
 // #[derive(Clone)]
-struct AgentContentMap(StableBTreeMap<AgentId, Content, Memory>);
-
-impl Storable for AgentContentMap {
-    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
-        // Serialize the inner map
-        let encoded: Vec<u8> = Encode!(&self.0.iter().collect::<Vec<_>>()).unwrap();
-        Cow::Owned(encoded)
-    }
-
-    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
-        // Deserialize into a vector of key-value pairs
-        let decoded: Vec<(AgentId, Content)> =
-            Decode!(bytes.as_ref(), Vec<(AgentId, Content)>).unwrap();
-        let mut map =
-            StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1))));
-        for (k, v) in decoded {
-            map.insert(k, v);
-        }
-        AgentContentMap(map)
-    }
-}
-
-impl BoundedStorable for AgentContentMap {
-    const MAX_SIZE: u32 = MAX_LARGE_SIZE;
-    const IS_FIXED_SIZE: bool = false;
-}
 
 impl History {
     pub fn record_history(history_entry: (History, History), agent_id: String, caller: &String) {
