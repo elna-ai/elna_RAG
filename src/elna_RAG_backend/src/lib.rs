@@ -120,7 +120,6 @@ async fn chat(
     query_text: String,
     query_vector: Option<Vec<f32>>,
     uuid: String,
-    _history: Vec<(History, History)>,
 ) -> Result<Response, Error> {
     let caller = ic_cdk::api::caller();
     ic_cdk::println!("Caller: {:?}", caller.to_string());

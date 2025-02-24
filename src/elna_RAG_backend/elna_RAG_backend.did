@@ -52,13 +52,7 @@ type Roles = variant { System; User; Assistant };
 type TransformArgs = record { context : blob; response : HttpResponse };
 service : (Envs) -> {
   build_index : (text) -> (Result);
-  chat : (
-      text,
-      text,
-      opt vec float32,
-      text,
-      vec record { History; History },
-    ) -> (Result_1);
+  chat : (text, text, opt vec float32, text) -> (Result_1);
   create_collection : (text, nat64) -> (Result);
   create_index : (text, nat64, vec text, vec vec float32, text) -> (Result);
   delete_collection_from_db : (text) -> (Result);
