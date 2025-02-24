@@ -122,6 +122,13 @@ async fn chat(
     uuid: String,
     _history: Vec<(History, History)>,
 ) -> Result<Response, Error> {
+    let caller = ic_cdk::api::caller();
+    ic_cdk::println!("Caller: {:?}", caller.to_string());
+
+    if caller == Principal::anonymous() {
+        return Err(Error::HttpError("Anonymous user not allowed".to_string()));
+    }
+
     ic_cdk::println!("Agent ID: {:?}", agent_id);
     let wizard_details = match get_agent_details(agent_id.clone()).await {
         // TODO: change error type
@@ -129,9 +136,6 @@ async fn chat(
         // return Err("wizard details not found"),
         Some(value) => value,
     };
-
-    let caller = ic_cdk::api::caller();
-    ic_cdk::println!("Caller: {:?}", caller.to_string());
 
     // let mut anonymous = true;
     // let agent_history = if caller.to_string() == Principal::anonymous().to_text() {
@@ -141,9 +145,6 @@ async fn chat(
     //     History::read_history(&caller.to_string(), agent_id.clone())
     // };
 
-    if caller == Principal::anonymous() {
-        return Err(Error::HttpError("Anonymous user not allowed".to_string()));
-    }
     let agent_history = History::read_history(&caller.to_string(), agent_id.clone());
 
     ic_cdk::println!("Query Text: {:?}", query_text);
