@@ -13,17 +13,19 @@ const MAX_VALUE_SIZE: u32 = 100;
 const MAX_LARGE_SIZE: u32 = 10_485_760;
 
 thread_local! {
-    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =
-        RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
+static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =
+    RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
 
-    static MAP: RefCell<StableBTreeMap<CallerId, AgentContentMap, Memory>> = RefCell::new(
+    static MAP: RefCell<StableBTreeMap<(CallerId, AgentId), Content, Memory>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0))),
         )
     );
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize, CandidType)]
+#[derive(
+    PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize, CandidType, Default,
+)]
 struct CallerId(String);
 
 impl Storable for CallerId {
@@ -43,7 +45,9 @@ impl BoundedStorable for CallerId {
     const IS_FIXED_SIZE: bool = false;
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize, CandidType)]
+#[derive(
+    PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize, CandidType, Default,
+)]
 struct AgentId(String);
 
 impl Storable for AgentId {
@@ -147,23 +151,13 @@ impl History {
         MAP.with(|map| {
             let mut map = map.borrow_mut();
 
-            // Retrieve the existing AgentContentMap or create a new one if it doesn't exist
-            let mut agent_map = map.get(&caller_id).unwrap_or_else(|| {
-                AgentContentMap(StableBTreeMap::init(
-                    MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1))),
-                ))
-            });
-
-            // Insert the history entry
-            let mut content = agent_map
-                .0
-                .get(&agent_id)
+            // Get existing content or create new
+            let mut content = map
+                .get(&(caller_id.clone(), agent_id.clone()))
                 .unwrap_or_else(|| Content(Vec::new()));
-            content.0.push(history_entry);
-            agent_map.0.insert(agent_id, content.clone());
 
-            // Update the map with the modified AgentContentMap
-            map.insert(caller_id, agent_map);
+            content.0.push(history_entry);
+            map.insert((caller_id, agent_id), content);
         });
     }
 
@@ -173,10 +167,9 @@ impl History {
 
         MAP.with(|map| {
             let map = map.borrow();
-            map.get(&caller_id)
-                .and_then(|agent_map| agent_map.0.get(&agent_id).map(|content| content.clone()))
-                .map(|content| content.0)
-                .unwrap_or_else(Vec::new)
+            map.get(&(caller_id, agent_id))
+                .map(|content| content.0.clone())
+                .unwrap_or_default()
         })
     }
 
@@ -186,13 +179,7 @@ impl History {
 
         MAP.with(|map| {
             let mut map = map.borrow_mut();
-            if let Some(mut agent_map) = map.remove(&caller_id) {
-                agent_map.0.remove(&agent_id);
-
-                if !agent_map.0.is_empty() {
-                    map.insert(caller_id, agent_map);
-                }
-            }
+            map.remove(&(caller_id, agent_id));
         });
     }
 
@@ -202,31 +189,32 @@ impl History {
             let map = map.borrow();
             writeln!(history, "Complete Map Contents:").unwrap();
 
-            for (caller_id, agent_content_map) in map.iter() {
-                writeln!(history, "CallerId: {:?}", caller_id.0).unwrap();
+            for ((caller_id, agent_id), content) in map.iter() {
+                writeln!(
+                    history,
+                    "CallerId: {:?}, AgentId: {:?}",
+                    caller_id.0, agent_id.0
+                )
+                .unwrap();
+                writeln!(history, "    History Entries:").unwrap();
 
-                for (agent_id, content) in agent_content_map.0.iter() {
-                    writeln!(history, "  AgentId: {:?}", agent_id.0).unwrap();
-                    writeln!(history, "    History Entries:").unwrap();
-
-                    for (entry_1, entry_2) in &content.0 {
-                        writeln!(
-                            history,
-                            "      Entry 1 - Role: {:?}, Content: {}",
-                            entry_1.role, entry_1.content
-                        )
-                        .unwrap();
-                        writeln!(
-                            history,
-                            "      Entry 2 - Role: {:?}, Content: {}",
-                            entry_2.role, entry_2.content
-                        )
-                        .unwrap();
-                    }
+                for (entry_1, entry_2) in &content.0 {
+                    writeln!(
+                        history,
+                        "      Entry 1 - Role: {:?}, Content: {}",
+                        entry_1.role, entry_1.content
+                    )
+                    .unwrap();
+                    // Similar for entry_2
+                    writeln!(
+                        history,
+                        "      Entry 1 - Role: {:?}, Content: {}",
+                        entry_2.role, entry_2.content
+                    )
+                    .unwrap();
                 }
             }
         });
-
         history
     }
 }
