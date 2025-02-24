@@ -8,7 +8,7 @@ use std::fmt::Write;
 use std::{borrow::Cow, cell::RefCell};
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
-
+const HISTORY_MEMORY: MemoryId = MemoryId::new(0);
 const MAX_VALUE_SIZE: u32 = 100;
 const MAX_LARGE_SIZE: u32 = 10_485_760;
 
@@ -18,7 +18,7 @@ static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =
 
     static MAP: RefCell<StableBTreeMap<(CallerId, AgentId), Content, Memory>> = RefCell::new(
         StableBTreeMap::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0))),
+            MEMORY_MANAGER.with(|m| m.borrow().get(HISTORY_MEMORY)),
         )
     );
 }

@@ -67,9 +67,9 @@ pub async fn summarise_history(
             new_summary
         }
 
-        Err(e) => {
+        Err(_e) => {
             // Handle the error properly
-            format!("")
+            format!("There is no history to summarize")
         }
     }
 }

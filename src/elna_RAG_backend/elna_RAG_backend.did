@@ -46,7 +46,8 @@ type Result_2 = variant {
   Ok : vec text;
   Err : record { RejectionCode; text; text };
 };
-type Result_3 = variant { Ok; Err : record { RejectionCode; text } };
+type Result_3 = variant { Ok : vec record { History; History }; Err : Error };
+type Result_4 = variant { Ok; Err : record { RejectionCode; text } };
 type Roles = variant { System; User; Assistant };
 type TransformArgs = record { context : blob; response : HttpResponse };
 service : (Envs) -> {
@@ -64,10 +65,10 @@ service : (Envs) -> {
   delete_history : (text) -> ();
   embedding_model : (text) -> (vec float32);
   get_db_file_names : (text) -> (Result_2);
-  get_history : (text) -> (vec record { History; History }) query;
+  get_history : (text) -> (Result_3) query;
   insert_data : (text, vec text, vec vec float32, text) -> (Result);
-  log : (principal, text, vec record { text; DetailValue }) -> (Result_3);
+  log : (principal, text, vec record { text; DetailValue }) -> (Result_4);
   search : (text, vec float32, int32) -> (Result);
-  test : (text) -> (Result_3);
+  test : (text) -> (Result_4);
   transform : (TransformArgs) -> (HttpResponse) query;
 }

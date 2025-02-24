@@ -106,9 +106,12 @@ pub async fn delete_history(agent_id: String) -> () {
 }
 
 #[query]
-pub fn get_history(agent_id: String) -> Vec<(History, History)> {
-    let caller_id = ic_cdk::api::caller().to_string();
-    History::read_history(&caller_id, agent_id)
+pub fn get_history(agent_id: String) -> Result<Vec<(History, History)>, Error> {
+    let caller = ic_cdk::api::caller();
+    if caller == Principal::anonymous() {
+        return Err(Error::HttpError("Anonymous user not allowed".to_string()));
+    }
+    Ok(History::read_history(&caller.to_string(), agent_id))
 }
 
 #[update]
@@ -117,7 +120,7 @@ async fn chat(
     query_text: String,
     query_vector: Option<Vec<f32>>,
     uuid: String,
-    history: Vec<(History, History)>,
+    _history: Vec<(History, History)>,
 ) -> Result<Response, Error> {
     ic_cdk::println!("Agent ID: {:?}", agent_id);
     let wizard_details = match get_agent_details(agent_id.clone()).await {
@@ -128,15 +131,21 @@ async fn chat(
     };
 
     let caller = ic_cdk::api::caller();
-    ic_cdk::println!("Caller: {:?}", caller);
+    ic_cdk::println!("Caller: {:?}", caller.to_string());
 
-    let mut anonymous = true;
-    let agent_history = if caller.to_string() == Principal::anonymous().to_text() {
-        history
-    } else {
-        anonymous = false;
-        History::read_history(&caller.to_string(), agent_id.clone())
-    };
+    // let mut anonymous = true;
+    // let agent_history = if caller.to_string() == Principal::anonymous().to_text() {
+    //     history
+    // } else {
+    //     anonymous = false;
+    //     History::read_history(&caller.to_string(), agent_id.clone())
+    // };
+
+    if caller == Principal::anonymous() {
+        return Err(Error::HttpError("Anonymous user not allowed".to_string()));
+    }
+    let agent_history = History::read_history(&caller.to_string(), agent_id.clone());
+
     ic_cdk::println!("Query Text: {:?}", query_text);
     ic_cdk::println!("Agent history: {:?}", agent_history);
 
@@ -189,20 +198,19 @@ async fn chat(
             ic_cdk::println!("Log : {:?}", result);
 
             // Record history if it was None initially
-            if anonymous == false {
-                let history_entry1 = History {
-                    role: Roles::User,
-                    content: query_text,
-                    // timestamp: time.clone(),
-                };
-                let history_entry2 = History {
-                    role: Roles::Assistant,
-                    content: data.body.response.clone(),
-                    // timestamp: time,
-                };
-                let history_entries = (history_entry1, history_entry2);
-                History::record_history(history_entries, agent_id.clone(), &caller.to_string());
-            }
+            let history_entry1 = History {
+                role: Roles::User,
+                content: query_text,
+                // timestamp: time.clone(),
+            };
+            let history_entry2 = History {
+                role: Roles::Assistant,
+                content: data.body.response.clone(),
+                // timestamp: time,
+            };
+            let history_entries = (history_entry1, history_entry2);
+            History::record_history(history_entries, agent_id.clone(), &caller.to_string());
+
             Ok(data)
         }
         Err(e) => Err(e),
