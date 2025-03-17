@@ -15,7 +15,7 @@ use helpers::canister_calls::{get_agent_details, log};
 use helpers::history::{History, Roles};
 use helpers::out_calls::post_json;
 use helpers::prompt::get_prompt;
-use ic_cdk::api::performance_counter;
+use ic_cdk::api::canister_balance;
 use ic_cdk::{export_candid, post_upgrade, query, update};
 
 thread_local! {
@@ -144,7 +144,8 @@ async fn chat(
     query_vector: Option<Vec<f32>>,
     uuid: String,
 ) -> Result<Response, Error> {
-    let initial_cycles = performance_counter(0);
+    let initial_cycles = canister_balance();
+    ic_cdk::println!("fn:chat: initial_cycles:{}", initial_cycles);
 
     let caller = ic_cdk::api::caller();
     ic_cdk::println!("Caller: {:?}", caller.to_string());
@@ -238,11 +239,11 @@ async fn chat(
 
             // Get the final cycle count
 
-            let final_cycles = performance_counter(0);
-
+            let final_cycles = canister_balance();
+            ic_cdk::println!("fn:chat: final_cycles:{}", final_cycles);
             // Calculate the cycles used
-
-            let cycles_used = final_cycles - initial_cycles;
+            let cycles_used = initial_cycles - final_cycles;
+            ic_cdk::println!("fn:chat: cycles_used:{}", cycles_used);
 
             // Create a new log entry
             let log_entry = LogEntry {
