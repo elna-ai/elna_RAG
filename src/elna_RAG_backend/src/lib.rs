@@ -15,10 +15,33 @@ use helpers::canister_calls::{get_agent_details, log};
 use helpers::history::{History, Roles};
 use helpers::out_calls::post_json;
 use helpers::prompt::get_prompt;
+use ic_cdk::api::performance_counter;
 use ic_cdk::{export_candid, post_upgrade, query, update};
+
 thread_local! {
     static ENVS: RefCell<Envs> = RefCell::default();
+    static LOGS: RefCell<Vec<LogEntry>> = RefCell::default();
 
+}
+
+#[derive(Deserialize, CandidType, Debug, Clone)]
+pub struct LogEntry {
+    timestamp: u64,
+    caller: Principal,
+    function_name: String,
+    total_cycles: u64,
+}
+
+//  implement Default for LogEntry
+impl Default for LogEntry {
+    fn default() -> Self {
+        LogEntry {
+            timestamp: 0,
+            caller: Principal::anonymous(), // Use a default Principal (e.g., anonymous)
+            function_name: String::new(),
+            total_cycles: 0,
+        }
+    }
 }
 
 #[derive(Deserialize, CandidType, Debug, Default)]
@@ -121,6 +144,8 @@ async fn chat(
     query_vector: Option<Vec<f32>>,
     uuid: String,
 ) -> Result<Response, Error> {
+    let initial_cycles = performance_counter(0);
+
     let caller = ic_cdk::api::caller();
     ic_cdk::println!("Caller: {:?}", caller.to_string());
 
@@ -211,10 +236,36 @@ async fn chat(
             let history_entries = (history_entry1, history_entry2);
             History::record_history(history_entries, agent_id.clone(), &caller.to_string());
 
+            // Get the final cycle count
+
+            let final_cycles = performance_counter(0);
+
+            // Calculate the cycles used
+
+            let cycles_used = final_cycles - initial_cycles;
+
+            // Create a new log entry
+            let log_entry = LogEntry {
+                timestamp: ic_cdk::api::time(), // Use the current timestamp
+                caller,
+                function_name: "chat".to_string(),
+                total_cycles: cycles_used,
+            };
+
+            // Append the log entry to the LOGS
+            LOGS.with(|logs| {
+                logs.borrow_mut().push(log_entry);
+            });
+
             Ok(data)
         }
         Err(e) => Err(e),
     }
 }
-
+#[query]
+fn get_logs() -> Vec<LogEntry> {
+    LOGS.with(|logs| {
+        logs.borrow().clone() // Return a clone of the logs vector
+    })
+}
 export_candid!();

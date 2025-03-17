@@ -30,6 +30,12 @@ type HttpResponse = record {
   body : blob;
   headers : vec HttpHeader;
 };
+type LogEntry = record {
+  function_name : text;
+  timestamp : nat64;
+  caller : principal;
+  total_cycles : nat64;
+};
 type RejectionCode = variant {
   NoError;
   CanisterError;
@@ -60,6 +66,7 @@ service : (Envs) -> {
   embedding_model : (text) -> (vec float32);
   get_db_file_names : (text) -> (Result_2);
   get_history : (text) -> (Result_3) query;
+  get_logs : () -> (vec LogEntry) query;
   insert_data : (text, vec text, vec vec float32, text) -> (Result);
   log : (principal, text, vec record { text; DetailValue }) -> (Result_4);
   search : (text, vec float32, int32) -> (Result);
