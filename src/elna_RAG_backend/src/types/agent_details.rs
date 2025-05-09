@@ -59,6 +59,7 @@ pub struct WizardDetailsV3 {
     pub avatar: String,
     pub platform: String,
     pub modelName: String,
+    pub apiKey: String,
 }
 
 #[derive(CandidType, Deserialize)]

@@ -51,6 +51,7 @@ pub async fn summarise_history(
         user_message: history_string,
         platform:agent.platform,
         model_name: agent.model_name,
+        api_key: agent.api_key,
     };
 
     let external_url = get_envs().external_service_url;
@@ -149,6 +150,7 @@ pub async fn get_prompt(agent: Agent, limit: i32, uuid: String) -> Message {
         user_message: query_prompt,
         platform: agent.platform,
         model_name: agent.model_name,
+        api_key: agent.api_key,
     };
 
     ic_cdk::println!("Final Prompt: {:?}", message);

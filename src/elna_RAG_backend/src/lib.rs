@@ -69,6 +69,7 @@ pub struct Agent {
     history: Vec<(History, History)>,
     platform: String,
     model_name: String,
+    api_key: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -77,6 +78,7 @@ pub struct Message {
     user_message: String,
     platform: String,
     model_name: String,
+    api_key: String
 }
 
 
@@ -168,6 +170,7 @@ async fn chat(
         history: agent_history,
         platform: wizard_details.platform,
         model_name: wizard_details.modelName,
+        api_key: wizard_details.apiKey,
     };
 
     let hist_uid = uuid.clone() + "_history";
