@@ -67,6 +67,8 @@ pub struct Agent {
     query_vector: Vec<f32>,
     index_name: String,
     history: Vec<(History, History)>,
+    platform: String,
+    model_name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -76,6 +78,7 @@ pub struct Message {
     platform: String,
     model_name: String,
 }
+
 
 #[derive(Deserialize, CandidType, Debug)]
 pub struct Body {
@@ -160,10 +163,11 @@ async fn chat(
         query_text: query_text.clone(),
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
-
         query_vector: vectors,
         index_name: agent_id.clone(),
         history: agent_history,
+        platform: wizard_details.platform,
+        model_name: wizard_details.modelName,
     };
 
     let hist_uid = uuid.clone() + "_history";
