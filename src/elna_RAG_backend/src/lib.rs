@@ -73,6 +73,8 @@ pub struct Agent {
 pub struct Message {
     system_message: String,
     user_message: String,
+    platform: String,
+    model_name: String,
 }
 
 #[derive(Deserialize, CandidType, Debug)]
