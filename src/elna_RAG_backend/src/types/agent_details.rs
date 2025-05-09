@@ -57,6 +57,8 @@ pub struct WizardDetailsV3 {
     pub poolAddress: Option<String>,
     pub visibility: WizardVisibility,
     pub avatar: String,
+    pub platform: String,
+    pub modelName: String,
 }
 
 #[derive(CandidType, Deserialize)]
