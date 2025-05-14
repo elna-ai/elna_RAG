@@ -10,6 +10,7 @@ use ic_cdk::api::management_canister::http_request::TransformArgs;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use types::cap::DetailValue;
+use types::agent_details::AIModelDetails;
 mod helpers;
 use helpers::canister_calls::{get_agent_details, log};
 use helpers::history::{History, Roles};
@@ -67,18 +68,15 @@ pub struct Agent {
     query_vector: Vec<f32>,
     index_name: String,
     history: Vec<(History, History)>,
-    platform: String,
-    model_name: String,
-    api_key: String
+    model_details: Option<AIModelDetails>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
     system_message: String,
     user_message: String,
-    platform: String,
-    model_name: String,
-    api_key: String
+    model_details: Option<AIModelDetails>,
+
 }
 
 
@@ -168,9 +166,7 @@ async fn chat(
         query_vector: vectors,
         index_name: agent_id.clone(),
         history: agent_history,
-        platform: wizard_details.platform,
-        model_name: wizard_details.modelName,
-        api_key: wizard_details.apiKey,
+        model_details: wizard_details.model_details.clone()
     };
 
     let hist_uid = uuid.clone() + "_history";
