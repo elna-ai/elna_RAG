@@ -43,23 +43,36 @@ pub struct Response {
     pub message: String,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(Debug, Deserialize, Clone, CandidType)]
+#[serde(rename_all = "camelCase")]
+pub struct AIModelDetails {
+    pub platform: String,
+    #[serde(rename = "modelName")]
+    pub model_name: String,
+    #[serde(rename = "apiKey")]
+    pub api_key: String,
+}
+
+#[derive(Debug, Deserialize, Clone, CandidType)]
 pub struct WizardDetailsV3 {
     pub id: String,
-    pub isPublished: bool,
-    pub tokenAddress: Option<String>,
-    pub userId: String,
     pub name: String,
+    #[serde(rename = "userId")]
+    pub user_id: String,
     pub biography: String,
-    pub greeting: String,
     pub description: String,
-    pub summary: Option<String>,
-    pub poolAddress: Option<String>,
-    pub visibility: WizardVisibility,
     pub avatar: String,
-    pub platform: String,
-    pub modelName: String,
-    pub apiKey: String,
+    #[serde(rename = "isPublished")]
+    pub is_published: bool,
+    #[serde(rename = "modelDetails")]
+    pub model_details: Option<AIModelDetails>,
+    pub greeting: String,
+    pub summary: Option<String>,
+    pub visibility: WizardVisibility,
+    #[serde(rename = "poolAddress")]
+    pub pool_address: Option<String>,
+    #[serde(rename = "tokenAddress")]
+    pub token_address: Option<String>,
 }
 
 #[derive(CandidType, Deserialize)]
