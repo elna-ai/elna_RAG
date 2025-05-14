@@ -3,7 +3,7 @@
 #![allow(dead_code, unused_imports, non_snake_case)]
 use candid::{self, CandidType, Decode, Deserialize, Encode, Principal};
 use ic_cdk::api::call::CallResult as Result;
-
+use serde::Serialize;
 #[derive(CandidType, Deserialize)]
 pub struct InitialArgs {
     pub capCanisterId: Principal,
@@ -13,7 +13,7 @@ pub struct InitialArgs {
     pub elnaImagesCanisterId: Principal,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(Debug, CandidType, Deserialize, Clone)]
 pub enum WizardVisibility {
     #[serde(rename = "privateVisibility")]
     PrivateVisibility,
@@ -43,7 +43,7 @@ pub struct Response {
     pub message: String,
 }
 
-#[derive(Debug, Deserialize, Clone, CandidType)]
+#[derive(Debug, Deserialize, Clone, CandidType,Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AIModelDetails {
     pub platform: String,
