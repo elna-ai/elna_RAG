@@ -69,6 +69,7 @@ pub struct Agent {
     index_name: String,
     history: Vec<(History, History)>,
     model_details: Option<AIModelDetails>,
+    agent_to_agent: bool
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -125,6 +126,7 @@ async fn chat(
     query_text: String,
     query_vector: Option<Vec<f32>>,
     uuid: String,
+    agent_to_agent: bool,
 ) -> Result<Response, Error> {
     let caller = ic_cdk::api::caller();
     ic_cdk::println!("Caller: {:?}", caller.to_string());
@@ -166,7 +168,8 @@ async fn chat(
         query_vector: vectors,
         index_name: agent_id.clone(),
         history: agent_history,
-        model_details: wizard_details.model_details.clone()
+        model_details: wizard_details.model_details.clone(),
+        agent_to_agent: agent_to_agent,
     };
 
     let hist_uid = uuid.clone() + "_history";
