@@ -221,19 +221,20 @@ async fn insert_batch_with_state_management(
         let collection_exists_in_db = match collections_result {
             Ok((collections_response,)) => {
                 match collections_response {
-                    Result1::Ok(collections) => {
-                        let exists = collections.contains(&index_name);
-                        ic_cdk::println!("📦 Collection '{}' exists in DB: {}", index_name, exists);
-                        exists
+                    Result1::Ok(_docs) => {
+                        // If get_docs succeeds, collection exists (even if empty)
+                        ic_cdk::println!("📦 Collection '{}' exists in DB: true", index_name);
+                        true
                     }
                     Result1::Err(err) => {
-                        ic_cdk::println!("⚠️ Warning: Could not check existing collections");
+                        // Collection doesn't exist or other error
+                        ic_cdk::println!("📦 Collection '{}' exists in DB: false (error: {})", index_name, err);
                         false
                     }
                 }
             }
             Err(rejection) => {
-                ic_cdk::println!("⚠️ Warning: Failed to get collections: {:?}", rejection);
+                ic_cdk::println!("⚠️ Warning: Failed to get docs: {:?}", rejection);
                 false
             }
         };
