@@ -3,7 +3,7 @@
 #![allow(dead_code, unused_imports, non_snake_case)]
 use candid::{self, CandidType, Decode, Deserialize, Encode, Principal};
 use ic_cdk::api::call::CallResult as Result;
-
+use serde::Serialize;
 #[derive(CandidType, Deserialize)]
 pub struct InitialArgs {
     pub capCanisterId: Principal,
@@ -13,7 +13,7 @@ pub struct InitialArgs {
     pub elnaImagesCanisterId: Principal,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(Debug, CandidType, Deserialize, Clone)]
 pub enum WizardVisibility {
     #[serde(rename = "privateVisibility")]
     PrivateVisibility,
@@ -43,20 +43,36 @@ pub struct Response {
     pub message: String,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(Debug, Deserialize, Clone, CandidType,Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AIModelDetails {
+    pub platform: String,
+    #[serde(rename = "modelName")]
+    pub model_name: String,
+    #[serde(rename = "apiKey")]
+    pub api_key: String,
+}
+
+#[derive(Debug, Deserialize, Clone, CandidType)]
 pub struct WizardDetailsV3 {
     pub id: String,
-    pub isPublished: bool,
-    pub tokenAddress: Option<String>,
-    pub userId: String,
     pub name: String,
+    #[serde(rename = "userId")]
+    pub user_id: String,
     pub biography: String,
-    pub greeting: String,
     pub description: String,
-    pub summary: Option<String>,
-    pub poolAddress: Option<String>,
-    pub visibility: WizardVisibility,
     pub avatar: String,
+    #[serde(rename = "isPublished")]
+    pub is_published: bool,
+    #[serde(rename = "modelDetails")]
+    pub model_details: Option<AIModelDetails>,
+    pub greeting: String,
+    pub summary: Option<String>,
+    pub visibility: WizardVisibility,
+    #[serde(rename = "poolAddress")]
+    pub pool_address: Option<String>,
+    #[serde(rename = "tokenAddress")]
+    pub token_address: Option<String>,
 }
 
 #[derive(CandidType, Deserialize)]

@@ -10,6 +10,7 @@ use ic_cdk::api::management_canister::http_request::TransformArgs;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use types::cap::DetailValue;
+use types::agent_details::AIModelDetails;
 mod helpers;
 use helpers::canister_calls::{get_agent_details, log};
 use helpers::history::{History, Roles};
@@ -67,13 +68,18 @@ pub struct Agent {
     query_vector: Vec<f32>,
     index_name: String,
     history: Vec<(History, History)>,
+    model_details: Option<AIModelDetails>,
+    agent_to_agent: bool
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
     system_message: String,
     user_message: String,
+    model_details: Option<AIModelDetails>,
+
 }
+
 
 #[derive(Deserialize, CandidType, Debug)]
 pub struct Body {
@@ -120,6 +126,7 @@ async fn chat(
     query_text: String,
     query_vector: Option<Vec<f32>>,
     uuid: String,
+    agent_to_agent: bool,
 ) -> Result<Response, Error> {
     let caller = ic_cdk::api::caller();
     ic_cdk::println!("Caller: {:?}", caller.to_string());
@@ -158,10 +165,11 @@ async fn chat(
         query_text: query_text.clone(),
         biography: wizard_details.biography,
         greeting: wizard_details.greeting,
-
         query_vector: vectors,
         index_name: agent_id.clone(),
         history: agent_history,
+        model_details: wizard_details.model_details.clone(),
+        agent_to_agent: agent_to_agent,
     };
 
     let hist_uid = uuid.clone() + "_history";
